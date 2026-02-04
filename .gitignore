@@ -1,7 +1,8 @@
 node_modules
 
 !.env
-.env
+# See: https://tanstack.com/start/latest/docs/framework/react/guide/environment-variables
+# .env
 .env.local
 .DS_Store
 .cache
