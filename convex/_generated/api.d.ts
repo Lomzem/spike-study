@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as fetchStockData from "../fetchStockData.js";
 import type * as posts from "../posts.js";
 import type * as user from "../user.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  fetchStockData: typeof fetchStockData;
   posts: typeof posts;
   user: typeof user;
 }>;
