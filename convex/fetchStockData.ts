@@ -1,6 +1,11 @@
-import { internalAction, internalMutation } from './_generated/server'
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from './_generated/server'
 import { internal } from './_generated/api'
 import { v } from 'convex/values'
+import { vv } from './schema'
 
 const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
   'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
@@ -39,9 +44,6 @@ const MassiveDailyMarketSummaryResultValidator = v.object({
   trades: v.optional(v.number()),
   open: v.number(),
   volume: v.number(),
-  gap: v.optional(v.number()), // may not have stored previous day
-  range: v.number(),
-  change: v.number(),
 })
 
 function dateToString(year: number, month: number, day: number) {
@@ -58,7 +60,7 @@ function previousDate(date: { year: number; month: number; day: number }) {
   }
 }
 
-const CHUNK_SIZE = 500
+const CHUNK_SIZE = 100
 
 async function fetchDaily(date: { year: number; month: number; day: number }) {
   const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
@@ -71,7 +73,7 @@ async function fetchDaily(date: { year: number; month: number; day: number }) {
   return data
 }
 
-export const fetchDailyMarketSummary = internalAction({
+export const fetchAndInsertDailyMarketSummary = internalAction({
   args: {
     year: v.number(),
     month: v.number(),
@@ -79,20 +81,11 @@ export const fetchDailyMarketSummary = internalAction({
   },
   handler: async (ctx, args) => {
     const today = args
-    const yesterday = previousDate(args)
+    const todayResponse = await fetchDaily(today)
+    todayResponse.results = todayResponse.results.filter((r) => r.T === 'AAPL')
 
-    const [todayResponse, yesterdayResponse] = await Promise.all([
-      fetchDaily(today),
-      fetchDaily(yesterday),
-    ])
-
-    // Symbol to previous close
-    const prevClose = new Map<string, number>()
-    for (const result of yesterdayResponse.results) {
-      prevClose.set(result.T, result.c)
-    }
-
-    for (let i = 0; i < todayResponse.results.length; i += CHUNK_SIZE) {
+    // for (let i = 0; i < todayResponse.results.length; i += CHUNK_SIZE) {
+    for (let i = 0; i < 100; i += CHUNK_SIZE) {
       const chunk = todayResponse.results.slice(i, i + CHUNK_SIZE)
       await ctx.runMutation(internal.fetchStockData.insertDailyStockData, {
         year: args.year,
@@ -106,11 +99,6 @@ export const fetchDailyMarketSummary = internalAction({
           open: chunk.o,
           volume: chunk.v,
           trades: chunk.n,
-          change: chunk.c / chunk.o - 1,
-          range: chunk.h / chunk.l - 1,
-          gap: prevClose.get(chunk.T)
-            ? chunk.o / prevClose.get(chunk.T)! - 1
-            : undefined,
         })),
       })
     }
@@ -126,6 +114,27 @@ export const insertDailyStockData = internalMutation({
   },
   handler: async (ctx, args) => {
     for (const result of args.stockResults) {
+      const yesterday = previousDate({
+        year: args.year,
+        month: args.month,
+        day: args.day,
+      })
+      const yesterdayString = dateToString(
+        yesterday.year,
+        yesterday.month,
+        yesterday.day,
+      )
+      const prevDayClose = await ctx.db
+        .query('dailyStocks')
+        .withIndex('by_date_symbol', (q) =>
+          q.eq('date', yesterdayString).eq('symbol', result.symbol),
+        )
+        .unique()
+
+      const gap = prevDayClose
+        ? result.open / prevDayClose.close - 1
+        : undefined
+
       await ctx.db.insert('dailyStocks', {
         date: dateToString(args.year, args.month, args.day),
         symbol: result.symbol,
@@ -135,10 +144,110 @@ export const insertDailyStockData = internalMutation({
         close: result.close,
         volume: result.volume,
         trades: result.trades,
-        gap: result.gap,
-        range: result.range,
-        change: result.change,
+        gap: gap,
+        range: result.high / result.low - 1,
+        change: result.close / result.open - 1,
+        needsBackfill: gap === undefined,
       })
+    }
+  },
+})
+
+const BATCH_SIZE = 100
+
+export const listNeedsBackfill = internalQuery({
+  args: {
+    year: v.number(),
+    month: v.number(),
+    day: v.number(),
+    cursor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const targetDate = dateToString(args.year, args.month, args.day)
+    const results = await ctx.db
+      .query('dailyStocks')
+      .withIndex('by_date_needsBackfill', (q) =>
+        q.eq('date', targetDate).eq('needsBackfill', true),
+      )
+      .paginate({ numItems: BATCH_SIZE, cursor: args.cursor ?? null })
+    return results
+  },
+})
+
+export const processBackfill = internalMutation({
+  args: {
+    records: v.array(vv.doc('dailyStocks')),
+    date: v.object({
+      year: v.number(),
+      month: v.number(),
+      day: v.number(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const yesterday = previousDate(args.date)
+    const yesterdayString = dateToString(
+      yesterday.year,
+      yesterday.month,
+      yesterday.day,
+    )
+    for (const record of args.records) {
+      const prevDayClose = await ctx.db
+        .query('dailyStocks')
+        .withIndex('by_date_symbol', (q) =>
+          q.eq('date', yesterdayString).eq('symbol', record.symbol),
+        )
+        .unique()
+      if (!prevDayClose) return
+      await ctx.db.patch('dailyStocks', record._id, {
+        gap: record.open / prevDayClose.close - 1,
+        needsBackfill: false,
+      })
+    }
+  },
+})
+
+export const backfillGapAction = internalAction({
+  args: {
+    year: v.number(),
+    month: v.number(),
+    day: v.number(),
+    cursor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const result = await ctx.runQuery(
+      internal.fetchStockData.listNeedsBackfill,
+      {
+        year: args.year,
+        month: args.month,
+        day: args.day,
+        cursor: args.cursor,
+      },
+    )
+    if (result.page.length === 0) {
+      console.log('Backfill gap action done')
+      return
+    }
+
+    await ctx.runMutation(internal.fetchStockData.processBackfill, {
+      records: result.page,
+      date: {
+        year: args.year,
+        month: args.month,
+        day: args.day,
+      },
+    })
+
+    if (!result.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.fetchStockData.backfillGapAction,
+        {
+          year: args.year,
+          month: args.month,
+          day: args.day,
+          cursor: result.continueCursor,
+        },
+      )
     }
   },
 })

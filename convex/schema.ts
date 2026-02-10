@@ -15,7 +15,10 @@ const schema = defineSchema({
     gap: v.optional(v.number()), // may not have stored previous day
     range: v.number(),
     change: v.number(),
-  }),
+    needsBackfill: v.boolean(),
+  })
+    .index('by_date_symbol', ['date', 'symbol'])
+    .index('by_date_needsBackfill', ['date', 'needsBackfill']),
   posts: defineTable({
     id: v.string(),
     title: v.string(),
