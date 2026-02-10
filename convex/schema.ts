@@ -12,6 +12,9 @@ const schema = defineSchema({
     close: v.number(),
     volume: v.number(),
     trades: v.optional(v.number()),
+    gap: v.optional(v.number()), // may not have stored previous day
+    range: v.number(),
+    change: v.number(),
   }),
   posts: defineTable({
     id: v.string(),

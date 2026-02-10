@@ -39,13 +39,37 @@ const MassiveDailyMarketSummaryResultValidator = v.object({
   trades: v.optional(v.number()),
   open: v.number(),
   volume: v.number(),
+  gap: v.optional(v.number()), // may not have stored previous day
+  range: v.number(),
+  change: v.number(),
 })
 
 function dateToString(year: number, month: number, day: number) {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
+function previousDate(date: { year: number; month: number; day: number }) {
+  const d = new Date(Date.UTC(date.year, date.month - 1, date.day))
+  d.setUTCDate(d.getUTCDate() - 1)
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  }
+}
+
 const CHUNK_SIZE = 500
+
+async function fetchDaily(date: { year: number; month: number; day: number }) {
+  const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
+  url.pathname += `/${dateToString(date.year, date.month, date.day)}`
+
+  const response = await fetch(url.toString())
+  if (!response.ok) throw new Error('Fetch failed')
+
+  const data = (await response.json()) as MassiveDailyMarketSummaryResponse
+  return data
+}
 
 export const fetchDailyMarketSummary = internalAction({
   args: {
@@ -54,19 +78,22 @@ export const fetchDailyMarketSummary = internalAction({
     day: v.number(),
   },
   handler: async (ctx, args) => {
-    const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
-    const date = dateToString(args.year, args.month, args.day)
-    url.pathname += `/${date}`
-    const response = await fetch(url.toString())
-    if (!response.ok)
-      throw new Error(
-        `Failed to fetch daily market summary: ${response.status} ${response.statusText}`,
-      )
+    const today = args
+    const yesterday = previousDate(args)
 
-    const data = (await response.json()) as MassiveDailyMarketSummaryResponse
+    const [todayResponse, yesterdayResponse] = await Promise.all([
+      fetchDaily(today),
+      fetchDaily(yesterday),
+    ])
 
-    for (let i = 0; i < data.results.length; i += CHUNK_SIZE) {
-      const chunk = data.results.slice(i, i + CHUNK_SIZE)
+    // Symbol to previous close
+    const prevClose = new Map<string, number>()
+    for (const result of yesterdayResponse.results) {
+      prevClose.set(result.T, result.c)
+    }
+
+    for (let i = 0; i < todayResponse.results.length; i += CHUNK_SIZE) {
+      const chunk = todayResponse.results.slice(i, i + CHUNK_SIZE)
       await ctx.runMutation(internal.fetchStockData.insertDailyStockData, {
         year: args.year,
         month: args.month,
@@ -79,6 +106,11 @@ export const fetchDailyMarketSummary = internalAction({
           open: chunk.o,
           volume: chunk.v,
           trades: chunk.n,
+          change: chunk.c / chunk.o - 1,
+          range: chunk.h / chunk.l - 1,
+          gap: prevClose.get(chunk.T)
+            ? chunk.o / prevClose.get(chunk.T)! - 1
+            : undefined,
         })),
       })
     }
@@ -95,7 +127,7 @@ export const insertDailyStockData = internalMutation({
   handler: async (ctx, args) => {
     for (const result of args.stockResults) {
       await ctx.db.insert('dailyStocks', {
-        date: `${args.year}-${args.month}-${args.day}`,
+        date: dateToString(args.year, args.month, args.day),
         symbol: result.symbol,
         open: result.open,
         high: result.high,
@@ -103,6 +135,9 @@ export const insertDailyStockData = internalMutation({
         close: result.close,
         volume: result.volume,
         trades: result.trades,
+        gap: result.gap,
+        range: result.range,
+        change: result.change,
       })
     }
   },
