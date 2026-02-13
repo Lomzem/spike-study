@@ -1,0 +1,93 @@
+import db from '~/market-data/db'
+import {
+  dailyStocksTable,
+  type DailyStocksTableRow,
+} from '~/market-data/schema'
+
+const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
+  'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
+)!
+MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set(
+  'apiKey',
+  process.env.MASSIVE_API_KEY!,
+)
+MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set('adjusted', 'true')
+MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set('include_otc', 'false')
+
+interface MassiveDailyMarketSummaryResult {
+  T: string
+  c: number
+  h: number
+  l: number
+  n?: number
+  o: number
+  t: number
+  v: number
+}
+
+interface MassiveDailyMarketSummaryResponse {
+  queryCount: number
+  request_id: string
+  resultsCount: number
+  status: string
+  results: MassiveDailyMarketSummaryResult[]
+}
+
+function dateString(date: Date) {
+  return date.toISOString().split('T')[0]
+}
+
+async function fetchDailyStocks(date: Date) {
+  const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
+  url.pathname += `/${dateString(date)}`
+
+  const response = await fetch(url.toString())
+  if (!response.ok) return Error(`Fetch failed for ${dateString(date)}`)
+
+  const data = (await response.json()) as MassiveDailyMarketSummaryResponse
+  return data
+}
+
+async function insertDailyStocks({
+  date,
+  results,
+}: {
+  date: Date
+  results: MassiveDailyMarketSummaryResult[]
+}) {
+  const rowsWithCalculations: DailyStocksTableRow[] = results.map((r) => ({
+    date: dateString(date),
+    symbol: r.T,
+    open: r.o,
+    high: r.h,
+    low: r.l,
+    close: r.c,
+    volume: r.v,
+    trades: r.n ?? null,
+    gap: null,
+    range: r.h / r.l - 1,
+    change: r.c / r.o - 1,
+  }))
+  await db.insert(dailyStocksTable).values(rowsWithCalculations)
+}
+
+async function main() {
+  const targetDate = new Date(2026, 1, 22)
+
+  const data = await fetchDailyStocks(targetDate)
+  if (data instanceof Error) {
+    console.error(data)
+    return
+  }
+
+  if (data.results.length === 0) {
+    console.log(`No results for ${dateString(targetDate)}`)
+  }
+
+  await insertDailyStocks({
+    date: targetDate,
+    results: data.results,
+  })
+}
+
+main()

@@ -1,3 +1,4 @@
+import type { InferSelectModel } from 'drizzle-orm'
 import {
   integer,
   primaryKey,
@@ -27,3 +28,5 @@ export const dailyStocksTable = sqliteTable(
     }),
   ],
 )
+
+export type DailyStocksTableRow = InferSelectModel<typeof dailyStocksTable>
