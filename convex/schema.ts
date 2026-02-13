@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { typedV } from 'convex-helpers/validators'
 
-const schema = defineSchema({
+export const schema = defineSchema({
   dailyStocks: defineTable({
     date: v.string(),
     symbol: v.string(),
@@ -25,6 +25,5 @@ const schema = defineSchema({
     body: v.string(),
   }).index('id', ['id']),
 })
-export default schema
 
 export const vv = typedV(schema)

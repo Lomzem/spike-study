@@ -3,6 +3,7 @@ import {
   dailyStocksTable,
   type DailyStocksTableRow,
 } from '~/market-data/schema'
+import { dateString } from './dateUtil'
 
 const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
   'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
@@ -33,10 +34,6 @@ interface MassiveDailyMarketSummaryResponse {
   results?: MassiveDailyMarketSummaryResult[]
 }
 
-function dateString(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
 async function fetchDailyStocks(date: Date) {
   const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
   url.pathname += `/${dateString(date)}`
@@ -47,7 +44,7 @@ async function fetchDailyStocks(date: Date) {
   return data
 }
 
-const CHUNK_SIZE = 500
+const CHUNK_SIZE = 1000
 
 async function insertDailyStocks({
   date,
@@ -81,7 +78,7 @@ async function insertDailyStocks({
 }
 
 async function main() {
-  const targetDate = new Date(2026, 1, 22)
+  const targetDate = new Date(2026, 1, 20)
 
   const data = await fetchDailyStocks(targetDate)
 
