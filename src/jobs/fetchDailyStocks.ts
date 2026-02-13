@@ -28,25 +28,26 @@ interface MassiveDailyMarketSummaryResult {
 interface MassiveDailyMarketSummaryResponse {
   queryCount: number
   request_id: string
-  resultsCount: number
+  resultsCount?: number
   status: string
-  results: MassiveDailyMarketSummaryResult[]
+  results?: MassiveDailyMarketSummaryResult[]
 }
 
 function dateString(date: Date) {
-  return date.toISOString().split('T')[0]
+  return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
 async function fetchDailyStocks(date: Date) {
   const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
   url.pathname += `/${dateString(date)}`
 
-  const response = await fetch(url.toString())
-  if (!response.ok) return Error(`Fetch failed for ${dateString(date)}`)
+  const response = await fetch(url)
 
   const data = (await response.json()) as MassiveDailyMarketSummaryResponse
   return data
 }
+
+const CHUNK_SIZE = 500
 
 async function insertDailyStocks({
   date,
@@ -68,20 +69,26 @@ async function insertDailyStocks({
     range: r.h / r.l - 1,
     change: r.c / r.o - 1,
   }))
-  await db.insert(dailyStocksTable).values(rowsWithCalculations)
+
+  // Insert in chunks to avoid stack overflow
+  for (let i = 0; i < rowsWithCalculations.length; i += CHUNK_SIZE) {
+    const chunk = rowsWithCalculations.slice(i, i + CHUNK_SIZE)
+    await db.insert(dailyStocksTable).values(chunk)
+    console.log(
+      `Inserted ${i + chunk.length} / ${rowsWithCalculations.length} stocks`,
+    )
+  }
 }
 
 async function main() {
   const targetDate = new Date(2026, 1, 22)
 
   const data = await fetchDailyStocks(targetDate)
-  if (data instanceof Error) {
+
+  if (!data.results || data?.resultsCount === 0) {
+    console.error(`No results for ${dateString(targetDate)}`)
     console.error(data)
     return
-  }
-
-  if (data.results.length === 0) {
-    console.log(`No results for ${dateString(targetDate)}`)
   }
 
   await insertDailyStocks({
