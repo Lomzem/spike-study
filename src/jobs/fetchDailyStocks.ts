@@ -68,8 +68,8 @@ async function insertDailyStocks({
     volume: r.v,
     trades: r.n ?? null,
     gap: null,
-    range: r.h / r.l - 1,
-    change: r.c / r.o - 1,
+    range: r.l !== 0 ? r.h / r.l - 1 : 0,
+    change: r.o !== 0 ? r.c / r.o - 1 : 0,
   }))
 
   // Insert in chunks to avoid stack overflow
