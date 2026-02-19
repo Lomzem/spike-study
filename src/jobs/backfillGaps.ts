@@ -1,5 +1,13 @@
 import db from '~/market-data/db'
 
+/**
+ * Backfills the `gap` column in daily stock records using the most recent prior close.
+ *
+ * Updates rows in `daily_stocks_table` where `gap` is null and `open` is present by setting
+ * `gap` to (current.open / previous.close - 1) using the latest prior row for the same symbol
+ * with a non-null, non-zero `close`. Logs the number of rows affected; on error logs the failure
+ * and exits the process with code 1.
+ */
 async function main() {
   try {
     const result = await db.run(`

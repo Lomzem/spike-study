@@ -34,6 +34,13 @@ interface MassiveDailyMarketSummaryResponse {
   results?: MassiveDailyMarketSummaryResult[]
 }
 
+/**
+ * Fetches the Massive API daily market summary for the specified date.
+ *
+ * @param date - The target date whose summary will be requested (used in the request path as a YYYY-MM-DD date string).
+ * @returns The parsed MassiveDailyMarketSummaryResponse returned by the API.
+ * @throws Error if the HTTP response has a non-OK status; the error message includes the status code and status text.
+ */
 async function fetchDailyStocks(date: Date) {
   const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
   url.pathname += `/${dateString(date)}`
@@ -51,6 +58,14 @@ async function fetchDailyStocks(date: Date) {
 
 const CHUNK_SIZE = 1000
 
+/**
+ * Persists Massive API daily stock summaries for a given date into the daily stocks table.
+ *
+ * Transforms each API result into a DailyStocksTableRow (computing `range` as `high / low - 1` and `change` as `close / open - 1`, using `0` when the divisor is `0`), inserts the rows into the database in manageable chunks, and logs insertion progress.
+ *
+ * @param date - The date to associate with each inserted row (used as the row `date` value)
+ * @param results - Array of MassiveDailyMarketSummaryResult objects to transform and insert
+ */
 async function insertDailyStocks({
   date,
   results,
@@ -82,6 +97,12 @@ async function insertDailyStocks({
   }
 }
 
+/**
+ * Fetches the US market daily summaries for 2026-02-20 and persists them to the daily stocks table.
+ *
+ * If no results are returned for the target date, logs the response and returns early; otherwise transforms
+ * and inserts the retrieved summaries into the database.
+ */
 async function main() {
   const targetDate = new Date(2026, 1, 20)
 
