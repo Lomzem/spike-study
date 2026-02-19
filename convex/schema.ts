@@ -26,4 +26,6 @@ export const schema = defineSchema({
   }).index('id', ['id']),
 })
 
+export default schema
+
 export const vv = typedV(schema)
