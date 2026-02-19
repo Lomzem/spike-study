@@ -7,7 +7,7 @@ import { dateString } from './dateUtil'
 
 const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
   'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
-)!
+)
 MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set(
   'apiKey',
   process.env.MASSIVE_API_KEY!,
