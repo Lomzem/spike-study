@@ -39,6 +39,11 @@ async function fetchDailyStocks(date: Date) {
   url.pathname += `/${dateString(date)}`
 
   const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(
+      `API request failed: ${response.status} ${response.statusText}`,
+    )
+  }
 
   const data = (await response.json()) as MassiveDailyMarketSummaryResponse
   return data
