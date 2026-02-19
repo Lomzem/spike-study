@@ -11,7 +11,7 @@ export const dailyStocksTable = sqliteTable(
   'daily_stocks_table',
   {
     date: text({ length: 10 }).notNull(),
-    symbol: text({ length: 5 }).notNull(),
+    symbol: text({ length: 10 }).notNull(),
     open: real().notNull(),
     high: real().notNull(),
     low: real().notNull(),
