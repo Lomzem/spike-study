@@ -9,10 +9,13 @@ async function main() {
       FROM daily_stocks_table AS previous
       WHERE previous.symbol = current.symbol
         AND previous.date < current.date
+        AND previous.close IS NOT NULL
+        AND previous.close != 0
       ORDER BY previous.date DESC
       LIMIT 1
     )
-    WHERE gap IS NULL;
+    WHERE gap IS NULL
+    AND current.open IS NOT NULL;
   `)
     console.log(`Backfill complete. Rows affected: ${result.rowsAffected}`)
   } catch (err) {
