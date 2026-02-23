@@ -38,9 +38,16 @@ export const Route = createFileRoute('/chart/$symbol/$date')({
 
 function RouteComponent() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const { intradayData } = useLoaderData({
-    from: '/chart/$symbol/$date',
-  })
+  const { symbol, date } = Route.useParams()
+  const { intradayData } = Route.useLoaderData()
+
+  if (intradayData.length === 0) {
+    return (
+      <p>
+        No data found for {symbol} on {date}
+      </p>
+    )
+  }
 
   useChart({
     candleData: intradayData.map((d) => ({
