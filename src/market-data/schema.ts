@@ -33,7 +33,7 @@ export const intradayStocksTable = sqliteTable(
   'intraday_stocks_table',
   {
     date: text({ length: 10 }).notNull(),
-    time: text({ length: 5 }).notNull(),
+    time: integer().notNull(),
     symbol: text({ length: 10 }).notNull(),
     open: real().notNull(),
     high: real().notNull(),

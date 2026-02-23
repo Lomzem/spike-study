@@ -6,6 +6,6 @@
  * @param date - The Date to format (local time is used)
  * @returns The formatted date string in `YYYY-MM-DD` form
  */
-export function dateString(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+export function toDateString(date: Date) {
+  return `${date.toISOString().split('T')[0]}`
 }

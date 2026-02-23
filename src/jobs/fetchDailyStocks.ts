@@ -3,7 +3,7 @@ import {
   dailyStocksTable,
   type DailyStocksTableRow,
 } from '~/market-data/schema'
-import { dateString } from './dateUtil'
+import { toDateString } from './dateUtil'
 import * as dotenv from 'dotenv'
 
 dotenv.config({ path: '.env.local' })
@@ -51,7 +51,7 @@ interface MassiveDailyMarketSummaryResponse {
  */
 async function fetchDailyStocks(date: Date) {
   const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
-  url.pathname += `/${dateString(date)}`
+  url.pathname += `/${toDateString(date)}`
 
   const response = await fetch(url)
   if (!response.ok) {
@@ -82,7 +82,7 @@ async function insertDailyStocks({
   results: MassiveDailyMarketSummaryResult[]
 }) {
   const rowsWithCalculations: DailyStocksTableRow[] = results.map((r) => ({
-    date: dateString(date),
+    date: toDateString(date),
     symbol: r.T,
     open: r.o,
     high: r.h,
@@ -117,7 +117,7 @@ async function main() {
   const data = await fetchDailyStocks(targetDate)
 
   if (!data.results || data?.resultsCount === 0) {
-    console.error(`No results for ${dateString(targetDate)}`)
+    console.error(`No results for ${toDateString(targetDate)}`)
     console.error(data)
     return
   }
