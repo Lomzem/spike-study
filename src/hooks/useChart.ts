@@ -6,6 +6,7 @@ import {
   type ISeriesApi,
 } from 'lightweight-charts'
 import { useEffect, useRef } from 'react'
+import { UserPriceLines } from '~/plugins/UserPriceLines'
 
 export default function useChart({
   candleData,
@@ -79,8 +80,14 @@ export default function useChart({
 
     const candlestickSeries = chart.addSeries(CandlestickSeries)
     candlestickSeries.setData(candleData)
+    seriesRef.current = candlestickSeries
+
+    const userPriceLines = new UserPriceLines(chart, candlestickSeries, {
+      color: '#4C9AFF',
+    })
 
     return () => {
+      userPriceLines.remove()
       observer.disconnect()
       chart.remove()
       chartRef.current = null
