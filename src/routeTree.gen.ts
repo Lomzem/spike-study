@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChartSymbolDateRouteImport } from './routes/chart.$symbol.$date'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChartSymbolDateRoute = ChartSymbolDateRouteImport.update({
+  id: '/chart/$symbol/$date',
+  path: '/chart/$symbol/$date',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/chart/$symbol/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/chart/$symbol/$date'
+  id: '__root__' | '/' | '/chart/$symbol/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChartSymbolDateRoute: typeof ChartSymbolDateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +58,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chart/$symbol/$date': {
+      id: '/chart/$symbol/$date'
+      path: '/chart/$symbol/$date'
+      fullPath: '/chart/$symbol/$date'
+      preLoaderRoute: typeof ChartSymbolDateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChartSymbolDateRoute: ChartSymbolDateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

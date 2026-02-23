@@ -1,8 +1,6 @@
 import db from '~/market-data/db'
 import {
-  dailyStocksTable,
   intradayStocksTable,
-  type DailyStocksTableRow,
   type IntradayStocksTableRow,
 } from '~/market-data/schema'
 import { toDateString } from './dateUtil'
@@ -52,7 +50,6 @@ async function fetchIntradayStock(symbol: string, date: Date) {
 
   const previousDate = new Date(date)
   previousDate.setDate(date.getDate() - 1)
-  const previousDateString = toDateString(previousDate)
 
   url.pathname += `${symbol}/range/${TIME_MULTIPLIER}/${TIME_FRAME}/${dateString}/${dateString}`
   console.log(url.toString())

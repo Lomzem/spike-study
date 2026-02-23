@@ -17,10 +17,14 @@ export default function useChart({
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
 
-  const rootStyles = getComputedStyle(document.documentElement)
-  const bgColor = rootStyles.getPropertyValue('--color-bg').trim()
-  const gridColor = rootStyles.getPropertyValue('--color-grid').trim()
-  const crosshairColor = rootStyles.getPropertyValue('--color-crosshair').trim()
+  // const rootStyles = getComputedStyle(document.documentElement)
+  // const bgColor = rootStyles.getPropertyValue('--color-bg').trim()
+  // const gridColor = rootStyles.getPropertyValue('--color-grid').trim()
+  // const crosshairColor = rootStyles.getPropertyValue('--color-crosshair').trim()
+
+  const bgColor = '#0f1117'
+  const gridColor = 'rgba(255, 255, 255, 0.03)'
+  const crosshairColor = 'rgba(255, 255, 255, 0.03)'
 
   useEffect(() => {
     if (!containerRef.current) return
