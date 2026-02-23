@@ -4,13 +4,21 @@ import {
   type DailyStocksTableRow,
 } from '~/market-data/schema'
 import { dateString } from './dateUtil'
+import * as dotenv from 'dotenv'
+
+dotenv.config({ path: '.env.local' })
+
+const MASSIVE_API_KEY = process.env.MASSIVE_API_KEY
+if (!MASSIVE_API_KEY) {
+  throw new Error('MASSIVE_API_KEY environment variable not set')
+}
 
 const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
   'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
 )
 MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set(
   'apiKey',
-  process.env.MASSIVE_API_KEY!,
+  MASSIVE_API_KEY,
 )
 MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set('adjusted', 'true')
 MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set('include_otc', 'false')
@@ -104,7 +112,7 @@ async function insertDailyStocks({
  * and inserts the retrieved summaries into the database.
  */
 async function main() {
-  const targetDate = new Date(2026, 1, 20)
+  const targetDate = new Date(2026, 0, 20)
 
   const data = await fetchDailyStocks(targetDate)
 
