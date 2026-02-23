@@ -7,6 +7,11 @@ import { internal } from './_generated/api'
 import { v } from 'convex/values'
 import { vv } from './schema'
 
+const apiKey = process.env.MASSIVE_API_KEY
+if (!apiKey) {
+  throw new Error('MASSIVE_API_KEY environment variable is not set')
+}
+
 const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
   'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
 )!
