@@ -112,7 +112,7 @@ async function insertDailyStocks({
  * and inserts the retrieved summaries into the database.
  */
 async function main() {
-  const targetDate = new Date(2026, 0, 20)
+  const targetDate = new Date(process.argv[process.argv.length - 1])
 
   const data = await fetchDailyStocks(targetDate)
 
