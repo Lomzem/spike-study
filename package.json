@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "db:push": "drizzle-kit push",
+        "db:studio": "drizzle-kit studio",
         "dev": "npx convex dev --once && concurrently -r npm:dev:web npm:dev:convex",
         "dev:web": "vite dev",
         "dev:convex": "npx convex dev",
