@@ -23,16 +23,26 @@ export default function useChart({
   const crosshairColor = rootStyles.getPropertyValue('--color-crosshair').trim()
 
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
+    if (!containerRef.current) return
 
     if (chartRef.current) {
       chartRef.current.remove()
     }
 
-    const chart = createChart(container, {
-      width: container.clientWidth,
-      height: container.clientHeight,
+    const handleResize = () => {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        })
+      }
+    }
+    const observer = new ResizeObserver(handleResize)
+    observer.observe(containerRef.current)
+
+    const chart = createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
+      height: containerRef.current.clientHeight,
       layout: {
         background: { color: bgColor },
       },
@@ -71,6 +81,7 @@ export default function useChart({
     candlestickSeries.setData(candleData)
 
     return () => {
+      observer.disconnect()
       chart.remove()
       chartRef.current = null
       seriesRef.current = null
