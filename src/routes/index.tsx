@@ -5,9 +5,5 @@ export const Route = createFileRoute('/')({
 })
 
 function Home() {
-  return (
-    <div className="p-2">
-      <h1>Tanstack Start Convex with Clerk</h1>
-    </div>
-  )
+  return <p>hel</p>
 }
