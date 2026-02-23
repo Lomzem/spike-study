@@ -1,6 +1,13 @@
 @import 'tailwindcss';
 
 @layer base {
+  :root {
+    --color-bg: #0f1117;
+    --color-fg: #9ca3af;
+    --color-grid: rgba(255, 255, 255, 0.03);
+    --color-crosshair: rgba(255, 255, 255, 0.03);
+  }
+
   html,
   body {
     @apply text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-200;

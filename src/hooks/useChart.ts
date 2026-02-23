@@ -17,6 +17,11 @@ export default function useChart({
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
 
+  const rootStyles = getComputedStyle(document.documentElement)
+  const bgColor = rootStyles.getPropertyValue('--color-bg').trim()
+  const gridColor = rootStyles.getPropertyValue('--color-grid').trim()
+  const crosshairColor = rootStyles.getPropertyValue('--color-crosshair').trim()
+
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -28,6 +33,37 @@ export default function useChart({
     const chart = createChart(container, {
       width: container.clientWidth,
       height: container.clientHeight,
+      layout: {
+        background: { color: bgColor },
+      },
+      grid: {
+        vertLines: {
+          color: gridColor,
+        },
+        horzLines: {
+          color: gridColor,
+        },
+      },
+      crosshair: {
+        vertLine: {
+          color: crosshairColor,
+          width: 1,
+          style: 2,
+        },
+        horzLine: {
+          color: crosshairColor,
+          width: 1,
+          style: 2,
+        },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        borderColor: gridColor,
+      },
+      rightPriceScale: {
+        borderColor: gridColor,
+      },
     })
     chartRef.current = chart
 
