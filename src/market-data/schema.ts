@@ -29,4 +29,26 @@ export const dailyStocksTable = sqliteTable(
   ],
 )
 
+export const intradayStocksTable = sqliteTable(
+  'intraday_stocks_table',
+  {
+    date: text({ length: 10 }).notNull(),
+    time: text({ length: 5 }).notNull(),
+    symbol: text({ length: 10 }).notNull(),
+    open: real().notNull(),
+    high: real().notNull(),
+    low: real().notNull(),
+    close: real().notNull(),
+    volume: integer().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.date, table.time, table.symbol],
+    }),
+  ],
+)
+
 export type DailyStocksTableRow = InferSelectModel<typeof dailyStocksTable>
+export type IntradayStocksTableRow = InferSelectModel<
+  typeof intradayStocksTable
+>
