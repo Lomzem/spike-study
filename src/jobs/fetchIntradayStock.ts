@@ -52,7 +52,6 @@ async function fetchIntradayStock(symbol: string, date: Date) {
   previousDate.setDate(date.getDate() - 1)
 
   url.pathname += `${symbol}/range/${TIME_MULTIPLIER}/${TIME_FRAME}/${dateString}/${dateString}`
-  console.log(url.toString())
 
   const response = await fetch(url)
   if (!response.ok) {
