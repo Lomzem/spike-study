@@ -1,95 +1,29 @@
-import type {
-  IChartApi,
-  ISeriesApi,
-  ISeriesPrimitive,
-  IPrimitivePaneRenderer,
-  IPrimitivePaneView,
-  SeriesAttachedParameter,
-  Time,
-  MouseEventParams,
-  PrimitivePaneViewZOrder,
-} from 'lightweight-charts'
+import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
 import { CrosshairMode, LineStyle } from 'lightweight-charts'
-import type { CanvasRenderingTarget2D } from 'fancy-canvas'
-
-// --- Renderer: draws the "+" button near the price axis ---
-
-interface ButtonState {
-  visible: boolean
-  x: number
-  y: number
-  size: number
-}
-
-class UserPriceLinesRenderer implements IPrimitivePaneRenderer {
-  private _state: ButtonState
-
-  constructor(state: ButtonState) {
-    this._state = state
-  }
-
-  draw(target: CanvasRenderingTarget2D): void {
-    if (!this._state.visible) return
-
-    const state = this._state
-    target.useMediaCoordinateSpace(({ context: ctx }) => {
-      const { x, y, size } = state
-      const half = size / 2
-
-      // Button background
-      ctx.fillStyle = 'rgba(41, 98, 255, 0.85)'
-      ctx.beginPath()
-      ctx.roundRect(x - half, y - half, size, size, 4)
-      ctx.fill()
-
-      // "+" sign
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      const margin = size * 0.28
-      ctx.moveTo(x - half + margin, y)
-      ctx.lineTo(x + half - margin, y)
-      ctx.moveTo(x, y - half + margin)
-      ctx.lineTo(x, y + half - margin)
-      ctx.stroke()
-    })
-  }
-}
-
-// --- Pane View: produces the renderer ---
-
-class UserPriceLinesView implements IPrimitivePaneView {
-  _state: ButtonState = { visible: false, x: 0, y: 0, size: 28 }
-
-  renderer(): IPrimitivePaneRenderer | null {
-    return new UserPriceLinesRenderer(this._state)
-  }
-
-  zOrder(): PrimitivePaneViewZOrder {
-    return 'top'
-  }
-}
-
-// --- Main plugin class ---
 
 export interface UserPriceLinesOptions {
   color?: string
   lineWidth?: 1 | 2 | 3 | 4
 }
 
-export class UserPriceLines implements ISeriesPrimitive<Time> {
+const DRAG_THRESHOLD = 3 // px movement before considered a drag
+const HIT_TOLERANCE = 5 // px distance to grab an existing line
+
+export class UserPriceLines {
   private _chart: IChartApi
   private _series: ISeriesApi<'Candlestick'>
   private _options: Required<UserPriceLinesOptions>
-  private _view = new UserPriceLinesView()
-  private _requestUpdate: (() => void) | null = null
+  private _lines: IPriceLine[] = []
 
-  private _crosshairHandler: ((param: MouseEventParams<Time>) => void) | null =
-    null
-  private _clickHandler: ((param: MouseEventParams<Time>) => void) | null = null
+  private _selected: IPriceLine | null = null
+  private _dragging: IPriceLine | null = null
+  private _mouseDownY: number | null = null
+  private _didDrag = false
 
-  // Track the price axis width for hit detection
-  private _buttonPrice: number | null = null
+  private _onMouseDown: (e: MouseEvent) => void
+  private _onMouseMove: (e: MouseEvent) => void
+  private _onMouseUp: (e: MouseEvent) => void
+  private _onKeyDown: (e: KeyboardEvent) => void
 
   constructor(
     chart: IChartApi,
@@ -103,109 +37,146 @@ export class UserPriceLines implements ISeriesPrimitive<Time> {
       lineWidth: options?.lineWidth ?? 1,
     }
 
-    // Set crosshair to Normal mode for accurate coordinates
     this._chart.applyOptions({
       crosshair: { mode: CrosshairMode.Normal },
     })
 
-    this._series.attachPrimitive(this)
+    const el = this._chart.chartElement()
+
+    this._onMouseDown = (e: MouseEvent) => this._handleMouseDown(e)
+    this._onMouseMove = (e: MouseEvent) => this._handleMouseMove(e)
+    this._onMouseUp = (e: MouseEvent) => this._handleMouseUp(e)
+    this._onKeyDown = (e: KeyboardEvent) => this._handleKeyDown(e)
+
+    el.addEventListener('mousedown', this._onMouseDown)
+    window.addEventListener('mousemove', this._onMouseMove)
+    window.addEventListener('mouseup', this._onMouseUp)
+    window.addEventListener('keydown', this._onKeyDown)
   }
 
-  attached(param: SeriesAttachedParameter<Time>) {
-    this._requestUpdate = param.requestUpdate
-
-    this._crosshairHandler = (param: MouseEventParams<Time>) => {
-      this._onCrosshairMove(param)
-    }
-    this._clickHandler = (param: MouseEventParams<Time>) => {
-      this._onClick(param)
-    }
-
-    this._chart.subscribeCrosshairMove(this._crosshairHandler)
-    this._chart.subscribeClick(this._clickHandler)
+  private _yFromEvent(e: MouseEvent): number {
+    const rect = this._chart.chartElement().getBoundingClientRect()
+    return e.clientY - rect.top
   }
 
-  detached() {
-    if (this._crosshairHandler) {
-      this._chart.unsubscribeCrosshairMove(this._crosshairHandler)
-      this._crosshairHandler = null
-    }
-    if (this._clickHandler) {
-      this._chart.unsubscribeClick(this._clickHandler)
-      this._clickHandler = null
-    }
-    this._requestUpdate = null
-  }
-
-  paneViews() {
-    return [this._view]
-  }
-
-  private _onCrosshairMove(param: MouseEventParams<Time>) {
-    const point = param.point
-    if (!point) {
-      this._view._state.visible = false
-      this._buttonPrice = null
-      this._requestUpdate?.()
-      return
-    }
-
-    const chartElement = this._chart.chartElement()
-    const chartWidth = chartElement.clientWidth
-    const priceScaleWidth = this._chart.priceScale('right').width()
-    const paneRight = chartWidth - priceScaleWidth
-    const buttonSize = this._view._state.size
-
-    // Show button when mouse is near the right edge of the pane area
-    const triggerZone = 60
-    const inZone =
-      point.x >= paneRight - triggerZone && point.x <= paneRight + triggerZone
-
-    if (inZone) {
-      const price = this._series.coordinateToPrice(point.y)
-      if (price !== null) {
-        this._buttonPrice = price
-        this._view._state.visible = true
-        this._view._state.x = paneRight - buttonSize / 2 - 4
-        this._view._state.y = point.y
-        this._requestUpdate?.()
-        return
+  private _findLineAtY(y: number): IPriceLine | null {
+    for (const line of this._lines) {
+      const coord = this._series.priceToCoordinate(line.options().price)
+      if (coord !== null && Math.abs(coord - y) <= HIT_TOLERANCE) {
+        return line
       }
     }
-
-    this._view._state.visible = false
-    this._buttonPrice = null
-    this._requestUpdate?.()
+    return null
   }
 
-  private _onClick(param: MouseEventParams<Time>) {
-    if (!this._view._state.visible || this._buttonPrice === null) return
+  private _handleMouseDown(e: MouseEvent) {
+    if (e.button !== 0) return
+    const y = this._yFromEvent(e)
+    this._mouseDownY = y
+    this._didDrag = false
 
-    const point = param.point
-    if (!point) return
-
-    const { x, y, size } = this._view._state
-    const half = size / 2
-
-    // Check if click is within the button bounds
-    if (
-      point.x >= x - half &&
-      point.x <= x + half &&
-      point.y >= y - half &&
-      point.y <= y + half
-    ) {
-      this._series.createPriceLine({
-        price: this._buttonPrice,
-        color: this._options.color,
-        lineWidth: this._options.lineWidth,
-        lineStyle: LineStyle.Dashed,
-        axisLabelVisible: true,
-        title: '',
+    const hit = this._findLineAtY(y)
+    if (hit) {
+      this._dragging = hit
+      // Disable chart interaction while dragging
+      this._chart.applyOptions({
+        handleScroll: false,
+        handleScale: false,
       })
     }
   }
 
+  private _handleMouseMove(e: MouseEvent) {
+    if (this._mouseDownY === null) return
+    const y = this._yFromEvent(e)
+
+    if (!this._didDrag && Math.abs(y - this._mouseDownY) > DRAG_THRESHOLD) {
+      this._didDrag = true
+    }
+
+    if (this._dragging && this._didDrag) {
+      const price = this._series.coordinateToPrice(y)
+      if (price !== null) {
+        this._dragging.applyOptions({ price })
+      }
+    }
+  }
+
+  private _handleMouseUp(e: MouseEvent) {
+    if (e.button !== 0) return
+    const y = this._yFromEvent(e)
+
+    if (this._dragging) {
+      // Re-enable chart interaction
+      this._chart.applyOptions({
+        handleScroll: true,
+        handleScale: true,
+      })
+      if (!this._didDrag) {
+        // Clicked on a line without dragging — select it
+        this._selectLine(this._dragging)
+      }
+      this._dragging = null
+    } else if (!this._didDrag && this._mouseDownY !== null) {
+      const hit = this._findLineAtY(y)
+      if (hit) {
+        this._selectLine(hit)
+      } else {
+        // Clicked empty space — deselect, then create a new line
+        this._selectLine(null)
+        const price = this._series.coordinateToPrice(y)
+        if (price !== null) {
+          const line = this._series.createPriceLine({
+            price,
+            color: this._options.color,
+            lineWidth: this._options.lineWidth,
+            lineStyle: LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: '',
+          })
+          this._lines.push(line)
+        }
+      }
+    }
+
+    this._mouseDownY = null
+    this._didDrag = false
+  }
+
+  private _selectLine(line: IPriceLine | null) {
+    // Restore previous selection styling
+    if (this._selected) {
+      this._selected.applyOptions({
+        color: this._options.color,
+        lineWidth: this._options.lineWidth,
+      })
+    }
+    this._selected = line
+    // Highlight the selected line
+    if (this._selected) {
+      this._selected.applyOptions({
+        color: '#ff4444',
+        lineWidth: 2,
+      })
+    }
+  }
+
+  private _handleKeyDown(e: KeyboardEvent) {
+    if (!this._selected) return
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      this._series.removePriceLine(this._selected)
+      this._lines = this._lines.filter((l) => l !== this._selected)
+      this._selected = null
+    } else if (e.key === 'Escape') {
+      this._selectLine(null)
+    }
+  }
+
   remove() {
-    this._series.detachPrimitive(this)
+    const el = this._chart.chartElement()
+    el.removeEventListener('mousedown', this._onMouseDown)
+    window.removeEventListener('mousemove', this._onMouseMove)
+    window.removeEventListener('mouseup', this._onMouseUp)
+    window.removeEventListener('keydown', this._onKeyDown)
   }
 }
