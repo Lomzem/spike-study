@@ -4,8 +4,12 @@
   :root {
     --color-bg: #0f1117;
     --color-fg: #9ca3af;
+    --color-fg-muted: #1e2028;
+    --color-border: #1e2028;
     --color-grid: rgba(255, 255, 255, 0.03);
     --color-crosshair: rgba(255, 255, 255, 0.03);
+    --color-primary: #f97316;
+    --font-monospace: 'JetBrains Mono', monospace;
   }
 
   html,
@@ -16,4 +20,15 @@
   .using-mouse * {
     outline: none !important;
   }
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-fg: var(--color-fg);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-border: var(--color-border);
+  --color-grid: var(--color-grid);
+  --color-crosshair: var(--color-crosshair);
+  --color-primary: var(--color-primary);
+  --font-monospace: var(--font-monospace);
 }

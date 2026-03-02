@@ -1,4 +1,4 @@
-import { createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { useRef } from 'react'
 import { and, eq, getTableColumns } from 'drizzle-orm'
@@ -57,5 +57,5 @@ function RouteComponent() {
     containerRef: chartContainerRef,
   })
 
-  return <div className="h-dvh w-dvw" ref={chartContainerRef}></div>
+  return <div className="h-full w-dvw" ref={chartContainerRef}></div>
 }
