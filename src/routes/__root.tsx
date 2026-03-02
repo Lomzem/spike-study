@@ -154,7 +154,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="grid min-h-dvh bg-bg text-fg">
+      <body className="grid min-h-dvh bg-bg text-fg dark">
         <NavBar />
         {children}
         <TanStackRouterDevtools position="bottom-right" />
