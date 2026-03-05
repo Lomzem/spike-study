@@ -11,12 +11,13 @@ import {
 } from '~/components/ui/popover'
 
 interface DatePickerProps {
+  id?: string
   date: string
   onSelect: (date: string) => void
   className?: string
 }
 
-function DatePicker({ date, onSelect, className }: DatePickerProps) {
+function DatePicker({ id, date, onSelect, className }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
   const selectedDate = React.useMemo(() => {
@@ -36,6 +37,7 @@ function DatePicker({ date, onSelect, className }: DatePickerProps) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           data-empty={!date}
           className={cn(
