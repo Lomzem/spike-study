@@ -9,48 +9,81 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ScannerRouteImport } from './routes/scanner'
+import { Route as ChartRouteImport } from './routes/chart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChartSymbolDateRouteImport } from './routes/chart.$symbol.$date'
 
+const ScannerRoute = ScannerRouteImport.update({
+  id: '/scanner',
+  path: '/scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChartRoute = ChartRouteImport.update({
+  id: '/chart',
+  path: '/chart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChartSymbolDateRoute = ChartSymbolDateRouteImport.update({
-  id: '/chart/$symbol/$date',
-  path: '/chart/$symbol/$date',
-  getParentRoute: () => rootRouteImport,
+  id: '/$symbol/$date',
+  path: '/$symbol/$date',
+  getParentRoute: () => ChartRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chart': typeof ChartRouteWithChildren
+  '/scanner': typeof ScannerRoute
   '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chart': typeof ChartRouteWithChildren
+  '/scanner': typeof ScannerRoute
   '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chart': typeof ChartRouteWithChildren
+  '/scanner': typeof ScannerRoute
   '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chart/$symbol/$date'
+  fullPaths: '/' | '/chart' | '/scanner' | '/chart/$symbol/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chart/$symbol/$date'
-  id: '__root__' | '/' | '/chart/$symbol/$date'
+  to: '/' | '/chart' | '/scanner' | '/chart/$symbol/$date'
+  id: '__root__' | '/' | '/chart' | '/scanner' | '/chart/$symbol/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ChartSymbolDateRoute: typeof ChartSymbolDateRoute
+  ChartRoute: typeof ChartRouteWithChildren
+  ScannerRoute: typeof ScannerRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/scanner': {
+      id: '/scanner'
+      path: '/scanner'
+      fullPath: '/scanner'
+      preLoaderRoute: typeof ScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chart': {
+      id: '/chart'
+      path: '/chart'
+      fullPath: '/chart'
+      preLoaderRoute: typeof ChartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -60,17 +93,28 @@ declare module '@tanstack/react-router' {
     }
     '/chart/$symbol/$date': {
       id: '/chart/$symbol/$date'
-      path: '/chart/$symbol/$date'
+      path: '/$symbol/$date'
       fullPath: '/chart/$symbol/$date'
       preLoaderRoute: typeof ChartSymbolDateRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ChartRoute
     }
   }
 }
 
+interface ChartRouteChildren {
+  ChartSymbolDateRoute: typeof ChartSymbolDateRoute
+}
+
+const ChartRouteChildren: ChartRouteChildren = {
+  ChartSymbolDateRoute: ChartSymbolDateRoute,
+}
+
+const ChartRouteWithChildren = ChartRoute._addFileChildren(ChartRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ChartSymbolDateRoute: ChartSymbolDateRoute,
+  ChartRoute: ChartRouteWithChildren,
+  ScannerRoute: ScannerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

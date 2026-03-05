@@ -106,13 +106,56 @@ function RootComponent() {
   )
 }
 
+function NavBar() {
+  return (
+    <header className="flex items-center h-12 border-b border-border shrink-0">
+      {/* Orange vertical line */}
+      <div className="w-1 h-full bg-primary" />
+
+      {/* Logo */}
+      <h1 className="ml-2 font-bold tracking-widest uppercase font-monospace text-primary">
+        Spike Study
+      </h1>
+
+      {/* Separator */}
+      <div className="mx-3 w-px h-4 bg-fg-muted" />
+
+      {/* Nav Tabs */}
+      <nav className="flex gap-0 items-center h-full">
+        <Link
+          to="/scanner"
+          className="flex items-center px-3 h-full font-medium tracking-wider uppercase border-b-2 border-transparent transition-colors duration-200 font-monospace"
+          activeProps={{ className: 'text-primary' }}
+          inactiveProps={{
+            className: 'hover:border-primary/30',
+          }}
+        >
+          {' '}
+          Scanner
+        </Link>
+        <Link
+          to="/chart/AAPL/2026-01-22"
+          className="flex items-center px-3 h-full font-medium tracking-wider uppercase border-b-2 border-transparent transition-colors duration-200 font-monospace"
+          activeProps={{ className: 'text-primary' }}
+          inactiveProps={{
+            className: 'hover:border-primary/30',
+          }}
+        >
+          Chart
+        </Link>
+      </nav>
+    </header>
+  )
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="grid min-h-dvh bg-bg text-fg dark">
+        <NavBar />
         {children}
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
