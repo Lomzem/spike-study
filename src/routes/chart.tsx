@@ -59,9 +59,11 @@ function StockInfoBar() {
 
 function RouteComponent() {
   return (
-    <>
+    <div className="flex flex-col h-full">
       <StockInfoBar />
-      <Outlet />
-    </>
+      <div className="flex-1 min-h-0">
+        <Outlet />
+      </div>
+    </div>
   )
 }
