@@ -2,7 +2,7 @@ import {
   createFileRoute,
   Outlet,
   useNavigate,
-  getRouteApi,
+  useMatch,
 } from '@tanstack/react-router'
 import { useId } from 'react'
 import { Input } from '~/components/ui/input'
@@ -12,11 +12,14 @@ export const Route = createFileRoute('/chart')({
   component: RouteComponent,
 })
 
-const chartRouteApi = getRouteApi('/chart/$symbol/$date')
-
 function StockInfoBar() {
   const navigate = useNavigate({ from: '/chart' })
-  const { symbol, date } = chartRouteApi.useParams()
+  const childMatch = useMatch({
+    from: '/chart/$symbol/$date',
+    shouldThrow: false,
+  })
+  const symbol = childMatch?.params.symbol ?? ''
+  const date = childMatch?.params.date ?? ''
   const symbolId = useId()
   const dateId = useId()
 
