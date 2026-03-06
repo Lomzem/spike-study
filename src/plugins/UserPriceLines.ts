@@ -4,21 +4,38 @@ import { CrosshairMode, LineStyle } from 'lightweight-charts'
 export interface UserPriceLinesOptions {
   color?: string
   lineWidth?: 1 | 2 | 3 | 4
+  lineStyle?: LineStyle
+  dragThresholdPx?: number
+  hitTolerancePx?: number
+  selectedColor?: string
+  selectedLineWidth?: 1 | 2 | 3 | 4
 }
 
-const DRAG_THRESHOLD = 3 // px movement before considered a drag
-const HIT_TOLERANCE = 5 // px distance to grab an existing line
+const DEFAULT_DRAG_THRESHOLD_PX = 3
+const DEFAULT_HIT_TOLERANCE_PX = 5
+
+type InteractionPhase = 'idle' | 'pointerDown' | 'dragging'
+
+interface InteractionState {
+  phase: InteractionPhase
+  pointerDownY: number | null
+  dragLine: IPriceLine | null
+  selectedLine: IPriceLine | null
+}
 
 export class UserPriceLines {
   private _chart: IChartApi
   private _series: ISeriesApi<'Candlestick'>
   private _options: Required<UserPriceLinesOptions>
   private _lines: IPriceLine[] = []
+  private _removed = false
 
-  private _selected: IPriceLine | null = null
-  private _dragging: IPriceLine | null = null
-  private _mouseDownY: number | null = null
-  private _didDrag = false
+  private _state: InteractionState = {
+    phase: 'idle',
+    pointerDownY: null,
+    dragLine: null,
+    selectedLine: null,
+  }
 
   private _onMouseDown: (e: MouseEvent) => void
   private _onMouseMove: (e: MouseEvent) => void
@@ -35,6 +52,11 @@ export class UserPriceLines {
     this._options = {
       color: options?.color ?? '#4C9AFF',
       lineWidth: options?.lineWidth ?? 1,
+      lineStyle: options?.lineStyle ?? LineStyle.Dashed,
+      dragThresholdPx: options?.dragThresholdPx ?? DEFAULT_DRAG_THRESHOLD_PX,
+      hitTolerancePx: options?.hitTolerancePx ?? DEFAULT_HIT_TOLERANCE_PX,
+      selectedColor: options?.selectedColor ?? '#ff4444',
+      selectedLineWidth: options?.selectedLineWidth ?? 2,
     }
 
     this._chart.applyOptions({
@@ -54,129 +76,177 @@ export class UserPriceLines {
     window.addEventListener('keydown', this._onKeyDown)
   }
 
-  private _yFromEvent(e: MouseEvent): number {
+  private _getLocalY(e: MouseEvent): number {
     const rect = this._chart.chartElement().getBoundingClientRect()
     return e.clientY - rect.top
   }
 
-  private _findLineAtY(y: number): IPriceLine | null {
+  private _findLineNearCoordinate(y: number): IPriceLine | null {
     for (const line of this._lines) {
       const coord = this._series.priceToCoordinate(line.options().price)
-      if (coord !== null && Math.abs(coord - y) <= HIT_TOLERANCE) {
+      if (
+        coord !== null &&
+        Math.abs(coord - y) <= this._options.hitTolerancePx
+      ) {
         return line
       }
     }
     return null
   }
 
-  private _handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0) return
-    const y = this._yFromEvent(e)
-    this._mouseDownY = y
-    this._didDrag = false
+  private _createLineAtCoordinate(y: number): IPriceLine | null {
+    const price = this._series.coordinateToPrice(y)
+    if (price === null) {
+      return null
+    }
 
-    const hit = this._findLineAtY(y)
+    const line = this._series.createPriceLine({
+      price,
+      color: this._options.color,
+      lineWidth: this._options.lineWidth,
+      lineStyle: this._options.lineStyle,
+      axisLabelVisible: true,
+      title: '',
+    })
+    this._lines.push(line)
+    return line
+  }
+
+  private _removeLine(line: IPriceLine): void {
+    this._series.removePriceLine(line)
+    this._lines = this._lines.filter((existingLine) => existingLine !== line)
+    if (this._state.selectedLine === line) {
+      this._state.selectedLine = null
+    }
+  }
+
+  private _applyDefaultStyle(line: IPriceLine): void {
+    line.applyOptions({
+      color: this._options.color,
+      lineWidth: this._options.lineWidth,
+    })
+  }
+
+  private _applySelectedStyle(line: IPriceLine): void {
+    line.applyOptions({
+      color: this._options.selectedColor,
+      lineWidth: this._options.selectedLineWidth,
+    })
+  }
+
+  private _disableChartInteractions(): void {
+    this._chart.applyOptions({
+      handleScroll: false,
+      handleScale: false,
+    })
+  }
+
+  private _restoreChartInteractions(): void {
+    this._chart.applyOptions({
+      handleScroll: true,
+      handleScale: true,
+    })
+  }
+
+  private _resetPointerState(): void {
+    this._state.phase = 'idle'
+    this._state.pointerDownY = null
+    this._state.dragLine = null
+  }
+
+  private _handleMouseDown(e: MouseEvent) {
+    if (e.button !== 0 || this._removed) return
+    const y = this._getLocalY(e)
+    this._state.pointerDownY = y
+    this._state.phase = 'pointerDown'
+
+    const hit = this._findLineNearCoordinate(y)
+    this._state.dragLine = hit
     if (hit) {
-      this._dragging = hit
-      // Disable chart interaction while dragging
-      this._chart.applyOptions({
-        handleScroll: false,
-        handleScale: false,
-      })
+      this._disableChartInteractions()
     }
   }
 
   private _handleMouseMove(e: MouseEvent) {
-    if (this._mouseDownY === null) return
-    const y = this._yFromEvent(e)
+    if (this._state.pointerDownY === null || this._removed) return
+    const y = this._getLocalY(e)
 
-    if (!this._didDrag && Math.abs(y - this._mouseDownY) > DRAG_THRESHOLD) {
-      this._didDrag = true
+    if (
+      this._state.phase === 'pointerDown' &&
+      Math.abs(y - this._state.pointerDownY) > this._options.dragThresholdPx
+    ) {
+      this._state.phase = 'dragging'
     }
 
-    if (this._dragging && this._didDrag) {
+    if (this._state.phase === 'dragging' && this._state.dragLine) {
       const price = this._series.coordinateToPrice(y)
       if (price !== null) {
-        this._dragging.applyOptions({ price })
+        this._state.dragLine.applyOptions({ price })
       }
     }
   }
 
   private _handleMouseUp(e: MouseEvent) {
-    if (e.button !== 0) return
-    const y = this._yFromEvent(e)
+    if (e.button !== 0 || this._removed) return
+    const y = this._getLocalY(e)
+    const { dragLine, phase, pointerDownY } = this._state
 
-    if (this._dragging) {
-      // Re-enable chart interaction
-      this._chart.applyOptions({
-        handleScroll: true,
-        handleScale: true,
-      })
-      if (!this._didDrag) {
-        // Clicked on a line without dragging — select it
-        this._selectLine(this._dragging)
+    if (dragLine) {
+      this._restoreChartInteractions()
+      if (phase !== 'dragging') {
+        this._selectLine(dragLine)
       }
-      this._dragging = null
-    } else if (!this._didDrag && this._mouseDownY !== null) {
-      const hit = this._findLineAtY(y)
+      this._resetPointerState()
+      return
+    }
+
+    if (phase === 'pointerDown' && pointerDownY !== null) {
+      const hit = this._findLineNearCoordinate(y)
       if (hit) {
         this._selectLine(hit)
       } else {
-        // Clicked empty space — deselect, then create a new line
         this._selectLine(null)
-        const price = this._series.coordinateToPrice(y)
-        if (price !== null) {
-          const line = this._series.createPriceLine({
-            price,
-            color: this._options.color,
-            lineWidth: this._options.lineWidth,
-            lineStyle: LineStyle.Dashed,
-            axisLabelVisible: true,
-            title: '',
-          })
-          this._lines.push(line)
-        }
+        this._createLineAtCoordinate(y)
       }
     }
 
-    this._mouseDownY = null
-    this._didDrag = false
+    this._resetPointerState()
   }
 
   private _selectLine(line: IPriceLine | null) {
-    // Restore previous selection styling
-    if (this._selected) {
-      this._selected.applyOptions({
-        color: this._options.color,
-        lineWidth: this._options.lineWidth,
-      })
+    if (this._state.selectedLine && this._state.selectedLine !== line) {
+      this._applyDefaultStyle(this._state.selectedLine)
     }
-    this._selected = line
-    // Highlight the selected line
-    if (this._selected) {
-      this._selected.applyOptions({
-        color: '#ff4444',
-        lineWidth: 2,
-      })
+    this._state.selectedLine = line
+    if (this._state.selectedLine) {
+      this._applySelectedStyle(this._state.selectedLine)
     }
   }
 
   private _handleKeyDown(e: KeyboardEvent) {
-    if (!this._selected) return
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      this._series.removePriceLine(this._selected)
-      this._lines = this._lines.filter((l) => l !== this._selected)
-      this._selected = null
-    } else if (e.key === 'Escape') {
+    if (this._removed) return
+    if (e.key === 'Escape') {
       this._selectLine(null)
+      return
+    }
+
+    if (!this._state.selectedLine) return
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      this._removeLine(this._state.selectedLine)
     }
   }
 
   remove() {
+    if (this._removed) {
+      return
+    }
+
     const el = this._chart.chartElement()
     el.removeEventListener('mousedown', this._onMouseDown)
     window.removeEventListener('mousemove', this._onMouseMove)
     window.removeEventListener('mouseup', this._onMouseUp)
     window.removeEventListener('keydown', this._onKeyDown)
+    this._removed = true
   }
 }
