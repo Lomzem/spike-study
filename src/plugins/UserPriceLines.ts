@@ -238,12 +238,15 @@ export class UserPriceLines {
   private _handleKeyDown(e: KeyboardEvent) {
     if (this._removed) return
 
-    const target = e.target as HTMLElement | null
+    const path = e.composedPath()
     if (
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLSelectElement ||
-      target?.isContentEditable
+      path.some(
+        (el) =>
+          el instanceof HTMLInputElement ||
+          el instanceof HTMLTextAreaElement ||
+          el instanceof HTMLSelectElement ||
+          (el instanceof HTMLElement && el.isContentEditable),
+      )
     ) {
       return
     }
