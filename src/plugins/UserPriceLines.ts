@@ -237,7 +237,19 @@ export class UserPriceLines {
 
   private _handleKeyDown(e: KeyboardEvent) {
     if (this._removed) return
+
+    const target = e.target as HTMLElement | null
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target?.isContentEditable
+    ) {
+      return
+    }
+
     if (e.key === 'Escape') {
+      e.preventDefault()
       this._selectLine(null)
       return
     }
@@ -245,6 +257,7 @@ export class UserPriceLines {
     if (!this._state.selectedLine) return
 
     if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault()
       this._removeLine(this._state.selectedLine)
     }
   }
