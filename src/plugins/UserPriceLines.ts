@@ -271,6 +271,17 @@ export class UserPriceLines {
       return
     }
 
+    for (const line of this._lines) {
+      this._series.removePriceLine(line)
+    }
+    this._lines = []
+    this._state = {
+      phase: 'idle',
+      pointerDownY: null,
+      dragLine: null,
+      selectedLine: null,
+    }
+
     this._chart.applyOptions({
       crosshair: this._originalChartOptions.crosshair,
       handleScroll: this._originalChartOptions.handleScroll,
