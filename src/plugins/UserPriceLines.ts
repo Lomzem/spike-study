@@ -185,6 +185,7 @@ export class UserPriceLines {
 
     if (
       this._state.phase === 'pointerDown' &&
+      this._state.dragLine &&
       Math.abs(y - this._state.pointerDownY) > this._options.dragThresholdPx
     ) {
       this._state.phase = 'dragging'
