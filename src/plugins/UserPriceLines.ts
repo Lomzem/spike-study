@@ -29,6 +29,11 @@ export class UserPriceLines {
   private _options: Required<UserPriceLinesOptions>
   private _lines: IPriceLine[] = []
   private _removed = false
+  private _originalChartOptions!: {
+    crosshair: ReturnType<IChartApi['options']>['crosshair']
+    handleScroll: ReturnType<IChartApi['options']>['handleScroll']
+    handleScale: ReturnType<IChartApi['options']>['handleScale']
+  }
 
   private _state: InteractionState = {
     phase: 'idle',
@@ -57,6 +62,13 @@ export class UserPriceLines {
       hitTolerancePx: options?.hitTolerancePx ?? DEFAULT_HIT_TOLERANCE_PX,
       selectedColor: options?.selectedColor ?? '#ff4444',
       selectedLineWidth: options?.selectedLineWidth ?? 2,
+    }
+
+    const chartOpts = this._chart.options()
+    this._originalChartOptions = {
+      crosshair: chartOpts.crosshair,
+      handleScroll: chartOpts.handleScroll,
+      handleScale: chartOpts.handleScale,
     }
 
     this._chart.applyOptions({
@@ -143,8 +155,8 @@ export class UserPriceLines {
 
   private _restoreChartInteractions(): void {
     this._chart.applyOptions({
-      handleScroll: true,
-      handleScale: true,
+      handleScroll: this._originalChartOptions.handleScroll,
+      handleScale: this._originalChartOptions.handleScale,
     })
   }
 
@@ -241,6 +253,12 @@ export class UserPriceLines {
     if (this._removed) {
       return
     }
+
+    this._chart.applyOptions({
+      crosshair: this._originalChartOptions.crosshair,
+      handleScroll: this._originalChartOptions.handleScroll,
+      handleScale: this._originalChartOptions.handleScale,
+    })
 
     const el = this._chart.chartElement()
     el.removeEventListener('mousedown', this._onMouseDown)
