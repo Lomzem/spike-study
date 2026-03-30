@@ -18,6 +18,7 @@ import type { ConvexQueryClient } from '@convex-dev/react-query'
 import type { ConvexReactClient } from 'convex/react'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '~/styles/app.css?url'
+import { getSafeRedirectTarget } from '~/utils/redirect'
 
 const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(async () => {
   const { getToken, userId } = await auth()
@@ -28,14 +29,6 @@ const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(async () => {
     token,
   }
 })
-
-function getRedirectTarget(href: string) {
-  if (!href.startsWith('/')) {
-    return '/'
-  }
-
-  return href
-}
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -82,7 +75,7 @@ export const Route = createRootRouteWithContext<{
     const clerkAuth = await fetchClerkAuth()
     const { userId, token } = clerkAuth
     const isLoginRoute = location.pathname === '/login'
-    const redirectTarget = getRedirectTarget(location.href)
+    const redirectTarget = getSafeRedirectTarget(location.href)
     const locationSearch = location.search as Record<string, unknown>
     // During SSR only (the only time serverHttpClient exists),
     // set the Clerk auth token to make HTTP queries with.
@@ -100,11 +93,7 @@ export const Route = createRootRouteWithContext<{
     }
 
     if (userId && isLoginRoute) {
-      const next = getRedirectTarget(
-        typeof locationSearch.redirect === 'string'
-          ? locationSearch.redirect
-          : '/',
-      )
+      const next = getSafeRedirectTarget(locationSearch.redirect)
       throw redirect({ to: next })
     }
 

@@ -49,6 +49,12 @@ function RouteComponent() {
     [intradayData],
   )
 
+  useChart({
+    candleData,
+    containerRef: chartContainerRef,
+    symbol,
+  })
+
   if (intradayData.length === 0) {
     return (
       <p>
@@ -56,12 +62,6 @@ function RouteComponent() {
       </p>
     )
   }
-
-  useChart({
-    candleData,
-    containerRef: chartContainerRef,
-    symbol,
-  })
 
   return <div className="h-full w-dvw" ref={chartContainerRef}></div>
 }

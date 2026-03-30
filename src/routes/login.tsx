@@ -1,17 +1,10 @@
 import { SignIn } from '@clerk/tanstack-react-start'
 import { createFileRoute } from '@tanstack/react-router'
-
-function validateRedirect(value: unknown) {
-  if (typeof value !== 'string' || !value.startsWith('/')) {
-    return '/'
-  }
-
-  return value
-}
+import { getSafeRedirectTarget } from '~/utils/redirect'
 
 export const Route = createFileRoute('/login')({
   validateSearch: (search: Record<string, unknown>) => ({
-    redirect: validateRedirect(search.redirect),
+    redirect: getSafeRedirectTarget(search.redirect),
   }),
   component: LoginRoute,
 })

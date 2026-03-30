@@ -25,19 +25,44 @@ export const schema = defineSchema({
     body: v.string(),
   }).index('id', ['id']),
   userDrawings: defineTable({
-    userSubject: v.string(),
+    userTokenIdentifier: v.optional(v.string()),
+    userSubject: v.optional(v.string()),
     symbol: v.string(),
-    priceLines: v.array(
-      v.object({
-        id: v.string(),
-        price: v.number(),
-        color: v.string(),
-        lineWidth: v.number(),
-        lineStyle: v.number(),
-      }),
+    priceLines: v.optional(
+      v.array(
+        v.object({
+          id: v.string(),
+          price: v.number(),
+          color: v.string(),
+          lineWidth: v.number(),
+          lineStyle: v.number(),
+        }),
+      ),
     ),
     updatedAt: v.number(),
-  }).index('by_userSubject_and_symbol', ['userSubject', 'symbol']),
+  }).index('by_userTokenIdentifier_and_symbol', [
+    'userTokenIdentifier',
+    'symbol',
+  ]),
+  priceLines: defineTable({
+    lineId: v.string(),
+    userTokenIdentifier: v.string(),
+    symbol: v.string(),
+    price: v.number(),
+    color: v.string(),
+    lineWidth: v.number(),
+    lineStyle: v.number(),
+    updatedAt: v.number(),
+  })
+    .index('by_userTokenIdentifier_and_symbol', [
+      'userTokenIdentifier',
+      'symbol',
+    ])
+    .index('by_userTokenIdentifier_and_symbol_and_lineId', [
+      'userTokenIdentifier',
+      'symbol',
+      'lineId',
+    ]),
 })
 
 export default schema

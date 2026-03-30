@@ -23,6 +23,7 @@ export default function useChart({
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const userPriceLinesRef = useRef<UserPriceLines | null>(null)
   const saveTimeoutRef = useRef<number | null>(null)
+  const pendingPriceLinesRef = useRef<SavedPriceLine[] | null>(null)
   const hydratedDrawingKeyRef = useRef<string | null>(null)
   const normalizedSymbol = symbol.trim().toUpperCase()
   const savedPriceLines = useQuery(api.userDrawings.getForSymbol, {
@@ -41,6 +42,7 @@ export default function useChart({
         window.clearTimeout(saveTimeoutRef.current)
       }
 
+      pendingPriceLinesRef.current = priceLines
       hydratedDrawingKeyRef.current = `${normalizedSymbol}:${JSON.stringify(priceLines)}`
 
       saveTimeoutRef.current = window.setTimeout(() => {
@@ -51,10 +53,34 @@ export default function useChart({
           console.error('Failed to save user price lines', error)
           hydratedDrawingKeyRef.current = null
         })
+        saveTimeoutRef.current = null
+        pendingPriceLinesRef.current = null
       }, 500)
     },
     [normalizedSymbol, saveForSymbol],
   )
+
+  const flushPendingSave = useCallback(() => {
+    if (
+      saveTimeoutRef.current === null ||
+      pendingPriceLinesRef.current === null
+    ) {
+      return
+    }
+
+    const priceLines = pendingPriceLinesRef.current
+    window.clearTimeout(saveTimeoutRef.current)
+    saveTimeoutRef.current = null
+    pendingPriceLinesRef.current = null
+
+    void saveForSymbol({
+      symbol: normalizedSymbol,
+      priceLines,
+    }).catch((error: unknown) => {
+      console.error('Failed to save user price lines', error)
+      hydratedDrawingKeyRef.current = null
+    })
+  }, [normalizedSymbol, saveForSymbol])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -120,17 +146,15 @@ export default function useChart({
         userPriceLinesRef.current.remove()
         userPriceLinesRef.current = null
       }
-      if (saveTimeoutRef.current !== null) {
-        window.clearTimeout(saveTimeoutRef.current)
-        saveTimeoutRef.current = null
-      }
+      flushPendingSave()
       observer.disconnect()
       chart.remove()
       chartRef.current = null
       seriesRef.current = null
+      pendingPriceLinesRef.current = null
       hydratedDrawingKeyRef.current = null
     }
-  }, [candleData, containerRef, scheduleSave])
+  }, [candleData, containerRef, flushPendingSave, scheduleSave])
 
   useEffect(() => {
     if (
