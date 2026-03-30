@@ -24,6 +24,20 @@ export const schema = defineSchema({
     title: v.string(),
     body: v.string(),
   }).index('id', ['id']),
+  userDrawings: defineTable({
+    userSubject: v.string(),
+    symbol: v.string(),
+    priceLines: v.array(
+      v.object({
+        id: v.string(),
+        price: v.number(),
+        color: v.string(),
+        lineWidth: v.number(),
+        lineStyle: v.number(),
+      }),
+    ),
+    updatedAt: v.number(),
+  }).index('by_userSubject_and_symbol', ['userSubject', 'symbol']),
 })
 
 export default schema

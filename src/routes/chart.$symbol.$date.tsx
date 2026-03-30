@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { and, eq, getTableColumns } from 'drizzle-orm'
 import useChart from '~/hooks/useChart'
 import db from '~/market-data/db'
@@ -40,6 +40,14 @@ function RouteComponent() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const { symbol, date } = Route.useParams()
   const { intradayData } = Route.useLoaderData()
+  const candleData = useMemo(
+    () =>
+      intradayData.map((d) => ({
+        ...d,
+        time: d.time as UTCTimestamp,
+      })),
+    [intradayData],
+  )
 
   if (intradayData.length === 0) {
     return (
@@ -50,11 +58,9 @@ function RouteComponent() {
   }
 
   useChart({
-    candleData: intradayData.map((d) => ({
-      ...d,
-      time: d.time as UTCTimestamp,
-    })),
+    candleData,
     containerRef: chartContainerRef,
+    symbol,
   })
 
   return <div className="h-full w-dvw" ref={chartContainerRef}></div>
