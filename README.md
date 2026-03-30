@@ -45,13 +45,13 @@ Copy the example env file and fill in your keys:
 cp .env.example .env.local
 ```
 
-| Variable | Description | Where to get it |
-|---|---|---|
-| `CONVEX_DEPLOYMENT` | Convex deployment ID | [convex.dev](https://convex.dev) - create a project |
-| `CLERK_SECRET_KEY` | Clerk authentication secret | [clerk.com](https://clerk.com) - create an application |
-| `MASSIVE_API_KEY` | Market data API key | [Massive API](https://massivealgo.com) |
-| `TURSO_DATABASE_URL` | Turso database URL | [turso.tech](https://turso.tech) - create a database |
-| `TURSO_AUTH_TOKEN` | Turso auth token | Generated via `turso db tokens create` |
+| Variable             | Description                 | Where to get it                                        |
+| -------------------- | --------------------------- | ------------------------------------------------------ |
+| `CONVEX_DEPLOYMENT`  | Convex deployment ID        | [convex.dev](https://convex.dev) - create a project    |
+| `CLERK_SECRET_KEY`   | Clerk authentication secret | [clerk.com](https://clerk.com) - create an application |
+| `MASSIVE_API_KEY`    | Market data API key         | [Massive API](https://massivealgo.com)                 |
+| `TURSO_DATABASE_URL` | Turso database URL          | [turso.tech](https://turso.tech) - create a database   |
+| `TURSO_AUTH_TOKEN`   | Turso auth token            | Generated via `turso db tokens create`                 |
 
 You will also need to configure Clerk as an auth provider in Convex by following the [Convex + Clerk docs](https://docs.convex.dev/auth/clerk).
 
@@ -68,16 +68,16 @@ The app will be available at `http://localhost:3000`.
 
 ### Other Scripts
 
-| Command | Description |
-|---|---|
-| `pnpm dev:web` | Run only the Vite dev server |
-| `pnpm dev:convex` | Run only the Convex dev server |
-| `pnpm build` | Build for production + type check |
-| `pnpm start` | Run the production build |
-| `pnpm db:push` | Push Drizzle schema changes to Turso |
-| `pnpm db:studio` | Open Drizzle Studio to inspect the database |
-| `pnpm lint` | Run ESLint and TypeScript type checking |
-| `pnpm format` | Format code with Prettier |
+| Command           | Description                                 |
+| ----------------- | ------------------------------------------- |
+| `pnpm dev:web`    | Run only the Vite dev server                |
+| `pnpm dev:convex` | Run only the Convex dev server              |
+| `pnpm build`      | Build for production + type check           |
+| `pnpm start`      | Run the production build                    |
+| `pnpm db:push`    | Push Drizzle schema changes to Turso        |
+| `pnpm db:studio`  | Open Drizzle Studio to inspect the database |
+| `pnpm lint`       | Run ESLint and TypeScript type checking     |
+| `pnpm format`     | Format code with Prettier                   |
 
 ## Project Structure
 

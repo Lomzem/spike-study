@@ -36,7 +36,12 @@ function StockInfoBar() {
     <section className="flex gap-4 items-center py-1 px-4 border-b shrink-0 bg-bg border-border">
       {/* Symbol Selection */}
       <div className="flex gap-2 items-center">
-        <label htmlFor={symbolId} className="font-mono tracking-wider uppercase">Symbol</label>
+        <label
+          htmlFor={symbolId}
+          className="font-mono tracking-wider uppercase"
+        >
+          Symbol
+        </label>
         <Input
           id={symbolId}
           type="text"
@@ -48,7 +53,9 @@ function StockInfoBar() {
 
       {/* Date Selection */}
       <div className="flex gap-2 items-center">
-        <label htmlFor={dateId} className="font-mono tracking-wider uppercase">Date</label>
+        <label htmlFor={dateId} className="font-mono tracking-wider uppercase">
+          Date
+        </label>
         <DatePicker
           id={dateId}
           date={date}
