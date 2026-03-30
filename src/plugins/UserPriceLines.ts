@@ -47,6 +47,18 @@ function isFiniteNumber(value: number) {
   return Number.isFinite(value)
 }
 
+function normalizeLineWidth(lineWidth: number): 1 | 2 | 3 | 4 {
+  if (
+    Number.isFinite(lineWidth) &&
+    Number.isInteger(lineWidth) &&
+    (lineWidth === 1 || lineWidth === 2 || lineWidth === 3 || lineWidth === 4)
+  ) {
+    return lineWidth
+  }
+
+  return 1
+}
+
 export class UserPriceLines {
   private _chart: IChartApi
   private _series: ISeriesApi<'Candlestick'>
@@ -176,10 +188,11 @@ export class UserPriceLines {
   }
 
   private _createLine(state: SavedPriceLine): UserPriceLineRecord {
+    const lineWidth = normalizeLineWidth(state.lineWidth)
     const line = this._series.createPriceLine({
       price: state.price,
       color: state.color,
-      lineWidth: state.lineWidth as 1 | 2 | 3 | 4,
+      lineWidth,
       lineStyle: state.lineStyle as LineStyle,
       axisLabelVisible: true,
       title: '',
@@ -187,7 +200,7 @@ export class UserPriceLines {
 
     const record = {
       line,
-      state: { ...state },
+      state: { ...state, lineWidth },
     }
     this._lines.push(record)
     return record
@@ -211,7 +224,7 @@ export class UserPriceLines {
   private _applyPersistedStyle(record: UserPriceLineRecord): void {
     record.line.applyOptions({
       color: record.state.color,
-      lineWidth: record.state.lineWidth as 1 | 2 | 3 | 4,
+      lineWidth: normalizeLineWidth(record.state.lineWidth),
       lineStyle: record.state.lineStyle as LineStyle,
     })
   }

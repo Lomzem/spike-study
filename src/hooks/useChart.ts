@@ -171,7 +171,7 @@ export default function useChart({
       pendingPriceLinesRef.current = null
       hydratedDrawingKeyRef.current = null
     }
-  }, [candleData, containerRef, flushPendingSave, scheduleSave])
+  }, [candleData, containerRef, flushPendingSave])
 
   useEffect(() => {
     if (
