@@ -40,10 +40,12 @@ export const schema = defineSchema({
       ),
     ),
     updatedAt: v.number(),
-  }).index('by_userTokenIdentifier_and_symbol', [
-    'userTokenIdentifier',
-    'symbol',
-  ]),
+  })
+    .index('by_userTokenIdentifier_and_symbol', [
+      'userTokenIdentifier',
+      'symbol',
+    ])
+    .index('by_userSubject_and_symbol', ['userSubject', 'symbol']),
   priceLines: defineTable({
     lineId: v.string(),
     userTokenIdentifier: v.string(),

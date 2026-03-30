@@ -7,7 +7,13 @@ const priceLineValidator = v.object({
   price: v.number(),
   color: v.string(),
   lineWidth: v.number(),
-  lineStyle: v.number(),
+  lineStyle: v.union(
+    v.literal(0),
+    v.literal(1),
+    v.literal(2),
+    v.literal(3),
+    v.literal(4),
+  ),
 })
 
 const MAX_PRICE_LINES = 250
@@ -27,6 +33,43 @@ function normalizeSymbol(symbol: string) {
   return symbol.trim().toUpperCase()
 }
 
+function isValidLineWidth(lineWidth: number) {
+  return (
+    Number.isFinite(lineWidth) && Number.isInteger(lineWidth) && lineWidth > 0
+  )
+}
+
+function isValidPrice(price: number) {
+  return Number.isFinite(price)
+}
+
+function validatePriceLines(
+  priceLines: Array<{
+    id: string
+    price: number
+    color: string
+    lineWidth: number
+    lineStyle: 0 | 1 | 2 | 3 | 4
+  }>,
+) {
+  const seenLineIds = new Set<string>()
+
+  for (const priceLine of priceLines) {
+    if (seenLineIds.has(priceLine.id)) {
+      throw new Error(`Duplicate price line id: ${priceLine.id}`)
+    }
+    seenLineIds.add(priceLine.id)
+
+    if (!isValidPrice(priceLine.price)) {
+      throw new Error(`Invalid price for line ${priceLine.id}`)
+    }
+
+    if (!isValidLineWidth(priceLine.lineWidth)) {
+      throw new Error(`Invalid line width for line ${priceLine.id}`)
+    }
+  }
+}
+
 export const getForSymbol = query({
   args: {
     symbol: v.string(),
@@ -42,10 +85,12 @@ export const getForSymbol = query({
       .collect()
 
     if (priceLines.length === 0) {
-      const legacyDrawing = (await ctx.db.query('userDrawings').collect()).find(
-        (drawing) =>
-          drawing.symbol === symbol && drawing.userSubject === subject,
-      )
+      const legacyDrawing = await ctx.db
+        .query('userDrawings')
+        .withIndex('by_userSubject_and_symbol', (q) =>
+          q.eq('userSubject', subject).eq('symbol', symbol),
+        )
+        .unique()
 
       if (legacyDrawing?.priceLines) {
         return legacyDrawing.priceLines
@@ -77,6 +122,8 @@ export const saveForSymbol = mutation({
       throw new Error(`Too many price lines. Maximum is ${MAX_PRICE_LINES}.`)
     }
 
+    validatePriceLines(args.priceLines)
+
     const [drawingDoc, existingPriceLines] = await Promise.all([
       ctx.db
         .query('userDrawings')
@@ -94,15 +141,17 @@ export const saveForSymbol = mutation({
 
     const resolvedDrawingDoc =
       drawingDoc ??
-      (await ctx.db.query('userDrawings').collect()).find(
-        (drawing) =>
-          drawing.symbol === symbol && drawing.userSubject === subject,
-      )
+      (await ctx.db
+        .query('userDrawings')
+        .withIndex('by_userSubject_and_symbol', (q) =>
+          q.eq('userSubject', subject).eq('symbol', symbol),
+        )
+        .unique())
 
     const updatedAt = Date.now()
 
     if (resolvedDrawingDoc) {
-      await ctx.db.patch("userDrawings", resolvedDrawingDoc._id, {
+      await ctx.db.patch('userDrawings', resolvedDrawingDoc._id, {
         userTokenIdentifier: tokenIdentifier,
         updatedAt,
         priceLines: undefined,
@@ -124,7 +173,7 @@ export const saveForSymbol = mutation({
 
     for (const priceLine of existingPriceLines) {
       if (!nextLineIds.has(priceLine.lineId)) {
-        await ctx.db.delete("priceLines", priceLine._id)
+        await ctx.db.delete('priceLines', priceLine._id)
       }
     }
 
@@ -142,7 +191,7 @@ export const saveForSymbol = mutation({
       }
 
       if (existingPriceLine) {
-        await ctx.db.patch("priceLines", existingPriceLine._id, value)
+        await ctx.db.patch('priceLines', existingPriceLine._id, value)
       } else {
         await ctx.db.insert('priceLines', value)
       }

@@ -1,16 +1,31 @@
-import {
-  
-  CandlestickSeries,
-  
-  
-  createChart
-} from 'lightweight-charts'
+import { CandlestickSeries, createChart } from 'lightweight-charts'
 import { useMutation, useQuery } from 'convex/react'
 import { useCallback, useEffect, useRef } from 'react'
 import { api } from '../../convex/_generated/api'
-import type {CandlestickData, IChartApi, ISeriesApi} from 'lightweight-charts';
-import type {SavedPriceLine} from '~/plugins/UserPriceLines';
-import {  UserPriceLines } from '~/plugins/UserPriceLines'
+import type { CandlestickData, IChartApi, ISeriesApi } from 'lightweight-charts'
+import type { SavedLineStyle, SavedPriceLine } from '~/plugins/UserPriceLines'
+import { UserPriceLines } from '~/plugins/UserPriceLines'
+
+function isSavedLineStyle(value: number): value is SavedLineStyle {
+  return value >= 0 && value <= 4 && Number.isInteger(value)
+}
+
+function normalizeSavedPriceLines(
+  priceLines: Array<{
+    id: string
+    price: number
+    color: string
+    lineWidth: number
+    lineStyle: number
+  }>,
+): Array<SavedPriceLine> {
+  return priceLines.filter(
+    (priceLine): priceLine is SavedPriceLine =>
+      Number.isFinite(priceLine.price) &&
+      Number.isFinite(priceLine.lineWidth) &&
+      isSavedLineStyle(priceLine.lineStyle),
+  )
+}
 
 export default function useChart({
   candleData,
@@ -183,7 +198,9 @@ export default function useChart({
       )
     }
 
-    userPriceLinesRef.current.importState(savedPriceLines)
+    userPriceLinesRef.current.importState(
+      normalizeSavedPriceLines(savedPriceLines),
+    )
     hydratedDrawingKeyRef.current = drawingKey
   }, [normalizedSymbol, savedPriceLines, scheduleSave])
 

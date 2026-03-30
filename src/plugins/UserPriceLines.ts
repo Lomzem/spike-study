@@ -1,12 +1,14 @@
 import { CrosshairMode, LineStyle } from 'lightweight-charts'
 import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
 
+export type SavedLineStyle = 0 | 1 | 2 | 3 | 4
+
 export interface SavedPriceLine {
   id: string
   price: number
   color: string
   lineWidth: number
-  lineStyle: number
+  lineStyle: SavedLineStyle
 }
 
 export interface UserPriceLinesOptions {
