@@ -1,5 +1,15 @@
-import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
 import { CrosshairMode, LineStyle } from 'lightweight-charts'
+import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
+
+export type SavedLineStyle = 0 | 1 | 2 | 3 | 4
+
+export interface SavedPriceLine {
+  id: string
+  price: number
+  color: string
+  lineWidth: number
+  lineStyle: SavedLineStyle
+}
 
 export interface UserPriceLinesOptions {
   color?: string
@@ -9,6 +19,7 @@ export interface UserPriceLinesOptions {
   hitTolerancePx?: number
   selectedColor?: string
   selectedLineWidth?: 1 | 2 | 3 | 4
+  onChange?: (lines: Array<SavedPriceLine>) => void
 }
 
 const DEFAULT_DRAG_THRESHOLD_PX = 3
@@ -16,18 +27,45 @@ const DEFAULT_HIT_TOLERANCE_PX = 5
 
 type InteractionPhase = 'idle' | 'pointerDown' | 'dragging'
 
+interface UserPriceLineRecord {
+  line: IPriceLine
+  state: SavedPriceLine
+}
+
 interface InteractionState {
   phase: InteractionPhase
   pointerDownY: number | null
-  dragLine: IPriceLine | null
-  selectedLine: IPriceLine | null
+  dragLine: UserPriceLineRecord | null
+  selectedLine: UserPriceLineRecord | null
+}
+
+function createLineId() {
+  return crypto.randomUUID()
+}
+
+function isFiniteNumber(value: number) {
+  return Number.isFinite(value)
+}
+
+function normalizeLineWidth(lineWidth: number): 1 | 2 | 3 | 4 {
+  if (
+    Number.isFinite(lineWidth) &&
+    Number.isInteger(lineWidth) &&
+    (lineWidth === 1 || lineWidth === 2 || lineWidth === 3 || lineWidth === 4)
+  ) {
+    return lineWidth
+  }
+
+  return 1
 }
 
 export class UserPriceLines {
   private _chart: IChartApi
   private _series: ISeriesApi<'Candlestick'>
-  private _options: Required<UserPriceLinesOptions>
-  private _lines: IPriceLine[] = []
+  private _options: Required<Omit<UserPriceLinesOptions, 'onChange'>> & {
+    onChange?: (lines: Array<SavedPriceLine>) => void
+  }
+  private _lines: Array<UserPriceLineRecord> = []
   private _removed = false
   private _originalChartOptions!: {
     crosshair: ReturnType<IChartApi['options']>['crosshair']
@@ -62,6 +100,7 @@ export class UserPriceLines {
       hitTolerancePx: options?.hitTolerancePx ?? DEFAULT_HIT_TOLERANCE_PX,
       selectedColor: options?.selectedColor ?? '#ff4444',
       selectedLineWidth: options?.selectedLineWidth ?? 2,
+      onChange: options?.onChange,
     }
 
     const chartOpts = this._chart.options()
@@ -88,59 +127,110 @@ export class UserPriceLines {
     window.addEventListener('keydown', this._onKeyDown)
   }
 
+  exportState(): Array<SavedPriceLine> {
+    return this._lines.map(({ state }) => ({ ...state }))
+  }
+
+  importState(lines: Array<SavedPriceLine>): void {
+    this._selectLine(null)
+    this._clearLines()
+
+    for (const line of lines) {
+      if (!isFiniteNumber(line.price)) {
+        continue
+      }
+
+      this._createLine({
+        id: line.id,
+        price: line.price,
+        color: line.color,
+        lineWidth: line.lineWidth,
+        lineStyle: line.lineStyle,
+      })
+    }
+  }
+
+  private _emitChange(): void {
+    this._options.onChange?.(this.exportState())
+  }
+
   private _getLocalY(e: MouseEvent): number {
     const rect = this._chart.chartElement().getBoundingClientRect()
     return e.clientY - rect.top
   }
 
-  private _findLineNearCoordinate(y: number): IPriceLine | null {
-    for (const line of this._lines) {
-      const coord = this._series.priceToCoordinate(line.options().price)
+  private _findLineNearCoordinate(y: number): UserPriceLineRecord | null {
+    for (const record of this._lines) {
+      const coord = this._series.priceToCoordinate(record.state.price)
       if (
         coord !== null &&
         Math.abs(coord - y) <= this._options.hitTolerancePx
       ) {
-        return line
+        return record
       }
     }
     return null
   }
 
-  private _createLineAtCoordinate(y: number): IPriceLine | null {
+  private _buildLineStateFromCoordinate(y: number): SavedPriceLine | null {
     const price = this._series.coordinateToPrice(y)
     if (price === null) {
       return null
     }
 
-    const line = this._series.createPriceLine({
+    return {
+      id: createLineId(),
       price,
       color: this._options.color,
       lineWidth: this._options.lineWidth,
       lineStyle: this._options.lineStyle,
+    }
+  }
+
+  private _createLine(state: SavedPriceLine): UserPriceLineRecord {
+    const lineWidth = normalizeLineWidth(state.lineWidth)
+    const line = this._series.createPriceLine({
+      price: state.price,
+      color: state.color,
+      lineWidth,
+      lineStyle: state.lineStyle as LineStyle,
       axisLabelVisible: true,
       title: '',
     })
-    this._lines.push(line)
-    return line
+
+    const record = {
+      line,
+      state: { ...state, lineWidth },
+    }
+    this._lines.push(record)
+    return record
   }
 
-  private _removeLine(line: IPriceLine): void {
-    this._series.removePriceLine(line)
-    this._lines = this._lines.filter((existingLine) => existingLine !== line)
-    if (this._state.selectedLine === line) {
+  private _removeLine(record: UserPriceLineRecord): void {
+    this._series.removePriceLine(record.line)
+    this._lines = this._lines.filter((existingLine) => existingLine !== record)
+    if (this._state.selectedLine === record) {
       this._state.selectedLine = null
     }
   }
 
-  private _applyDefaultStyle(line: IPriceLine): void {
-    line.applyOptions({
-      color: this._options.color,
-      lineWidth: this._options.lineWidth,
+  private _clearLines(): void {
+    for (const { line } of this._lines) {
+      this._series.removePriceLine(line)
+    }
+    this._lines = []
+  }
+
+  private _applyPersistedStyle(record: UserPriceLineRecord): void {
+    record.line.applyOptions({
+      color: record.state.color,
+      lineWidth: normalizeLineWidth(record.state.lineWidth),
+      lineStyle: record.state.lineStyle as LineStyle,
     })
   }
 
-  private _applySelectedStyle(line: IPriceLine): void {
-    line.applyOptions({
+  private _applySelectedStyle(record: UserPriceLineRecord): void {
+    record.line.applyOptions({
       color: this._options.selectedColor,
       lineWidth: this._options.selectedLineWidth,
     })
@@ -194,7 +284,8 @@ export class UserPriceLines {
     if (this._state.phase === 'dragging' && this._state.dragLine) {
       const price = this._series.coordinateToPrice(y)
       if (price !== null) {
-        this._state.dragLine.applyOptions({ price })
+        this._state.dragLine.state.price = price
+        this._state.dragLine.line.applyOptions({ price })
       }
     }
   }
@@ -206,7 +297,9 @@ export class UserPriceLines {
 
     if (dragLine) {
       this._restoreChartInteractions()
-      if (phase !== 'dragging') {
+      if (phase === 'dragging') {
+        this._emitChange()
+      } else {
         this._selectLine(dragLine)
       }
       this._resetPointerState()
@@ -219,16 +312,20 @@ export class UserPriceLines {
         this._selectLine(hit)
       } else {
         this._selectLine(null)
-        this._createLineAtCoordinate(y)
+        const lineState = this._buildLineStateFromCoordinate(y)
+        if (lineState) {
+          this._createLine(lineState)
+          this._emitChange()
+        }
       }
     }
 
     this._resetPointerState()
   }
 
-  private _selectLine(line: IPriceLine | null) {
+  private _selectLine(line: UserPriceLineRecord | null) {
     if (this._state.selectedLine && this._state.selectedLine !== line) {
-      this._applyDefaultStyle(this._state.selectedLine)
+      this._applyPersistedStyle(this._state.selectedLine)
     }
     this._state.selectedLine = line
     if (this._state.selectedLine) {
@@ -263,6 +360,7 @@ export class UserPriceLines {
     if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault()
       this._removeLine(this._state.selectedLine)
+      this._emitChange()
     }
   }
 
@@ -271,10 +369,7 @@ export class UserPriceLines {
       return
     }
 
-    for (const line of this._lines) {
-      this._series.removePriceLine(line)
-    }
-    this._lines = []
+    this._clearLines()
     this._state = {
       phase: 'idle',
       pointerDownY: null,

@@ -1,10 +1,8 @@
-import db from '~/market-data/db'
-import {
-  intradayStocksTable,
-  type IntradayStocksTableRow,
-} from '~/market-data/schema'
-import { toDateString } from './dateUtil'
 import * as dotenv from 'dotenv'
+import { toDateString } from './dateUtil'
+import type { IntradayStocksTableRow } from '~/market-data/schema'
+import db from '~/market-data/db'
+import { intradayStocksTable } from '~/market-data/schema'
 
 dotenv.config({ path: '.env.local' })
 
@@ -41,7 +39,7 @@ interface MassiveIntradayResponse {
   request_id: string
   resultsCount?: number
   status: string
-  results?: MassiveIntradayResult[]
+  results?: Array<MassiveIntradayResult>
 }
 
 async function fetchIntradayStock(symbol: string, date: Date) {
@@ -71,9 +69,9 @@ async function insertIntradayStock({
 }: {
   symbol: string
   date: Date
-  results: MassiveIntradayResult[]
+  results: Array<MassiveIntradayResult>
 }) {
-  const renamedResults: IntradayStocksTableRow[] = results.map((r) => ({
+  const renamedResults: Array<IntradayStocksTableRow> = results.map((r) => ({
     symbol,
     date: toDateString(date),
     open: r.o,
@@ -103,7 +101,7 @@ async function main() {
 
   const data = await fetchIntradayStock(symbol, targetDate)
 
-  if (!data.results || data?.resultsCount === 0) {
+  if (!data.results || data.resultsCount === 0) {
     console.error(`No results for ${toDateString(targetDate)}`)
     console.error(data)
     return
