@@ -4,7 +4,9 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  redirect,
   useRouteContext,
+  useRouterState,
 } from '@tanstack/react-router'
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
@@ -26,6 +28,14 @@ const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(async () => {
     token,
   }
 })
+
+function getRedirectTarget(href: string) {
+  if (!href.startsWith('/')) {
+    return '/'
+  }
+
+  return href
+}
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -68,13 +78,34 @@ export const Route = createRootRouteWithContext<{
       { rel: 'icon', href: '/favicon.ico' },
     ],
   }),
-  beforeLoad: async (ctx) => {
+  beforeLoad: async ({ context, location }) => {
     const clerkAuth = await fetchClerkAuth()
     const { userId, token } = clerkAuth
+    const isLoginRoute = location.pathname === '/login'
+    const redirectTarget = getRedirectTarget(location.href)
+    const locationSearch = location.search as Record<string, unknown>
     // During SSR only (the only time serverHttpClient exists),
     // set the Clerk auth token to make HTTP queries with.
     if (token) {
-      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token)
+      context.convexQueryClient.serverHttpClient?.setAuth(token)
+    }
+
+    if (!userId && !isLoginRoute) {
+      throw redirect({
+        to: '/login',
+        search: {
+          redirect: redirectTarget,
+        },
+      })
+    }
+
+    if (userId && isLoginRoute) {
+      const next = getRedirectTarget(
+        typeof locationSearch.redirect === 'string'
+          ? locationSearch.redirect
+          : '/',
+      )
+      throw redirect({ to: next })
     }
 
     return {
@@ -127,7 +158,8 @@ function NavBar() {
           Scanner
         </Link>
         <Link
-          to="/chart/AAPL/2026-01-22"
+          to="/chart/$symbol/$date"
+          params={{ symbol: 'AAPL', date: '2026-01-22' }}
           className="flex items-center px-3 h-full font-medium tracking-wider uppercase border-b-2 border-transparent transition-colors duration-200 font-monospace"
           activeProps={{ className: 'text-primary' }}
           inactiveProps={{
@@ -142,13 +174,18 @@ function NavBar() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+  const isLoginRoute = pathname === '/login'
+
   return (
     <html>
       <head>
         <HeadContent />
       </head>
       <body className="grid min-h-dvh bg-bg text-fg dark">
-        <NavBar />
+        {!isLoginRoute ? <NavBar /> : null}
         {children}
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />

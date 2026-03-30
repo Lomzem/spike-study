@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ScannerRouteImport } from './routes/scanner'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChartRouteImport } from './routes/chart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChartSymbolDateRouteImport } from './routes/chart.$symbol.$date'
@@ -17,6 +18,11 @@ import { Route as ChartSymbolDateRouteImport } from './routes/chart.$symbol.$dat
 const ScannerRoute = ScannerRouteImport.update({
   id: '/scanner',
   path: '/scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChartRoute = ChartRouteImport.update({
@@ -38,12 +44,14 @@ const ChartSymbolDateRoute = ChartSymbolDateRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chart': typeof ChartRouteWithChildren
+  '/login': typeof LoginRoute
   '/scanner': typeof ScannerRoute
   '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chart': typeof ChartRouteWithChildren
+  '/login': typeof LoginRoute
   '/scanner': typeof ScannerRoute
   '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
@@ -51,20 +59,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chart': typeof ChartRouteWithChildren
+  '/login': typeof LoginRoute
   '/scanner': typeof ScannerRoute
   '/chart/$symbol/$date': typeof ChartSymbolDateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chart' | '/scanner' | '/chart/$symbol/$date'
+  fullPaths: '/' | '/chart' | '/login' | '/scanner' | '/chart/$symbol/$date'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chart' | '/scanner' | '/chart/$symbol/$date'
-  id: '__root__' | '/' | '/chart' | '/scanner' | '/chart/$symbol/$date'
+  to: '/' | '/chart' | '/login' | '/scanner' | '/chart/$symbol/$date'
+  id:
+    | '__root__'
+    | '/'
+    | '/chart'
+    | '/login'
+    | '/scanner'
+    | '/chart/$symbol/$date'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChartRoute: typeof ChartRouteWithChildren
+  LoginRoute: typeof LoginRoute
   ScannerRoute: typeof ScannerRoute
 }
 
@@ -75,6 +91,13 @@ declare module '@tanstack/react-router' {
       path: '/scanner'
       fullPath: '/scanner'
       preLoaderRoute: typeof ScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chart': {
@@ -114,6 +137,7 @@ const ChartRouteWithChildren = ChartRoute._addFileChildren(ChartRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChartRoute: ChartRouteWithChildren,
+  LoginRoute: LoginRoute,
   ScannerRoute: ScannerRoute,
 }
 export const routeTree = rootRouteImport
