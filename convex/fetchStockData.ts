@@ -1,10 +1,10 @@
+import { v } from 'convex/values'
 import {
   internalAction,
   internalMutation,
   internalQuery,
 } from './_generated/server'
 import { internal } from './_generated/api'
-import { v } from 'convex/values'
 import { vv } from './schema'
 
 const apiKey = process.env.MASSIVE_API_KEY
@@ -14,7 +14,7 @@ if (!apiKey) {
 
 const MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT = new URL(
   'https://api.massive.com/v2/aggs/grouped/locale/us/market/stocks',
-)!
+)
 MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT.searchParams.set(
   'apiKey',
   process.env.MASSIVE_API_KEY!,
@@ -38,7 +38,7 @@ interface MassiveDailyMarketSummaryResponse {
   request_id: string
   resultsCount: number
   status: string
-  results: MassiveDailyMarketSummaryResult[]
+  results: Array<MassiveDailyMarketSummaryResult>
 }
 
 const MassiveDailyMarketSummaryResultValidator = v.object({
@@ -96,14 +96,14 @@ export const fetchAndInsertDailyMarketSummary = internalAction({
         year: args.year,
         month: args.month,
         day: args.day,
-        stockResults: chunk.map((chunk) => ({
-          symbol: chunk.T,
-          close: chunk.c,
-          high: chunk.h,
-          low: chunk.l,
-          open: chunk.o,
-          volume: chunk.v,
-          trades: chunk.n,
+        stockResults: chunk.map((result) => ({
+          symbol: result.T,
+          close: result.c,
+          high: result.h,
+          low: result.l,
+          open: result.o,
+          volume: result.v,
+          trades: result.n,
         })),
       })
     }

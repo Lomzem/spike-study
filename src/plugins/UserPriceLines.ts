@@ -1,5 +1,5 @@
-import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
 import { CrosshairMode, LineStyle } from 'lightweight-charts'
+import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
 
 export interface SavedPriceLine {
   id: string
@@ -17,7 +17,7 @@ export interface UserPriceLinesOptions {
   hitTolerancePx?: number
   selectedColor?: string
   selectedLineWidth?: 1 | 2 | 3 | 4
-  onChange?: (lines: SavedPriceLine[]) => void
+  onChange?: (lines: Array<SavedPriceLine>) => void
 }
 
 const DEFAULT_DRAG_THRESHOLD_PX = 3
@@ -49,9 +49,9 @@ export class UserPriceLines {
   private _chart: IChartApi
   private _series: ISeriesApi<'Candlestick'>
   private _options: Required<Omit<UserPriceLinesOptions, 'onChange'>> & {
-    onChange?: (lines: SavedPriceLine[]) => void
+    onChange?: (lines: Array<SavedPriceLine>) => void
   }
-  private _lines: UserPriceLineRecord[] = []
+  private _lines: Array<UserPriceLineRecord> = []
   private _removed = false
   private _originalChartOptions!: {
     crosshair: ReturnType<IChartApi['options']>['crosshair']
@@ -113,11 +113,11 @@ export class UserPriceLines {
     window.addEventListener('keydown', this._onKeyDown)
   }
 
-  exportState(): SavedPriceLine[] {
+  exportState(): Array<SavedPriceLine> {
     return this._lines.map(({ state }) => ({ ...state }))
   }
 
-  importState(lines: SavedPriceLine[]): void {
+  importState(lines: Array<SavedPriceLine>): void {
     this._selectLine(null)
     this._clearLines()
 

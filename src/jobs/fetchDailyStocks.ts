@@ -1,10 +1,8 @@
-import db from '~/market-data/db'
-import {
-  dailyStocksTable,
-  type DailyStocksTableRow,
-} from '~/market-data/schema'
-import { toDateString } from './dateUtil'
 import * as dotenv from 'dotenv'
+import { toDateString } from './dateUtil'
+import type { DailyStocksTableRow } from '~/market-data/schema'
+import db from '~/market-data/db'
+import { dailyStocksTable } from '~/market-data/schema'
 
 dotenv.config({ path: '.env.local' })
 
@@ -39,7 +37,7 @@ interface MassiveDailyMarketSummaryResponse {
   request_id: string
   resultsCount?: number
   status: string
-  results?: MassiveDailyMarketSummaryResult[]
+  results?: Array<MassiveDailyMarketSummaryResult>
 }
 
 /**
@@ -79,9 +77,9 @@ async function insertDailyStocks({
   results,
 }: {
   date: Date
-  results: MassiveDailyMarketSummaryResult[]
+  results: Array<MassiveDailyMarketSummaryResult>
 }) {
-  const rowsWithCalculations: DailyStocksTableRow[] = results.map((r) => ({
+  const rowsWithCalculations: Array<DailyStocksTableRow> = results.map((r) => ({
     date: toDateString(date),
     symbol: r.T,
     open: r.o,
@@ -116,7 +114,7 @@ async function main() {
 
   const data = await fetchDailyStocks(targetDate)
 
-  if (!data.results || data?.resultsCount === 0) {
+  if (!data.results || data.resultsCount === 0) {
     console.error(`No results for ${toDateString(targetDate)}`)
     console.error(data)
     return

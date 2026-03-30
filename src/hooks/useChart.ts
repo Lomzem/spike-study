@@ -1,14 +1,16 @@
 import {
+  
   CandlestickSeries,
-  createChart,
-  type CandlestickData,
-  type IChartApi,
-  type ISeriesApi,
+  
+  
+  createChart
 } from 'lightweight-charts'
 import { useMutation, useQuery } from 'convex/react'
 import { useCallback, useEffect, useRef } from 'react'
 import { api } from '../../convex/_generated/api'
-import { type SavedPriceLine, UserPriceLines } from '~/plugins/UserPriceLines'
+import type {CandlestickData, IChartApi, ISeriesApi} from 'lightweight-charts';
+import type {SavedPriceLine} from '~/plugins/UserPriceLines';
+import {  UserPriceLines } from '~/plugins/UserPriceLines'
 
 export default function useChart({
   candleData,
@@ -16,14 +18,14 @@ export default function useChart({
   symbol,
 }: {
   containerRef: React.RefObject<HTMLDivElement | null>
-  candleData: CandlestickData[]
+  candleData: Array<CandlestickData>
   symbol: string
 }) {
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const userPriceLinesRef = useRef<UserPriceLines | null>(null)
   const saveTimeoutRef = useRef<number | null>(null)
-  const pendingPriceLinesRef = useRef<SavedPriceLine[] | null>(null)
+  const pendingPriceLinesRef = useRef<Array<SavedPriceLine> | null>(null)
   const hydratedDrawingKeyRef = useRef<string | null>(null)
   const normalizedSymbol = symbol.trim().toUpperCase()
   const savedPriceLines = useQuery(api.userDrawings.getForSymbol, {
@@ -37,7 +39,7 @@ export default function useChart({
   const crosshairColor = 'rgba(255, 255, 255, 0.03)'
 
   const scheduleSave = useCallback(
-    (priceLines: SavedPriceLine[]) => {
+    (priceLines: Array<SavedPriceLine>) => {
       if (saveTimeoutRef.current !== null) {
         window.clearTimeout(saveTimeoutRef.current)
       }

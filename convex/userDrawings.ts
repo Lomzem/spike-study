@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
-import type { MutationCtx, QueryCtx } from './_generated/server'
 import { mutation, query } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 
 const priceLineValidator = v.object({
   id: v.string(),
@@ -102,7 +102,7 @@ export const saveForSymbol = mutation({
     const updatedAt = Date.now()
 
     if (resolvedDrawingDoc) {
-      await ctx.db.patch(resolvedDrawingDoc._id, {
+      await ctx.db.patch("userDrawings", resolvedDrawingDoc._id, {
         userTokenIdentifier: tokenIdentifier,
         updatedAt,
         priceLines: undefined,
@@ -124,7 +124,7 @@ export const saveForSymbol = mutation({
 
     for (const priceLine of existingPriceLines) {
       if (!nextLineIds.has(priceLine.lineId)) {
-        await ctx.db.delete(priceLine._id)
+        await ctx.db.delete("priceLines", priceLine._id)
       }
     }
 
@@ -142,7 +142,7 @@ export const saveForSymbol = mutation({
       }
 
       if (existingPriceLine) {
-        await ctx.db.patch(existingPriceLine._id, value)
+        await ctx.db.patch("priceLines", existingPriceLine._id, value)
       } else {
         await ctx.db.insert('priceLines', value)
       }
