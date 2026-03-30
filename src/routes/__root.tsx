@@ -8,7 +8,7 @@ import {
   useRouteContext,
   useRouterState,
 } from '@tanstack/react-router'
-import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start'
+import { ClerkProvider, UserButton, useAuth } from '@clerk/tanstack-react-start'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { createServerFn } from '@tanstack/react-start'
 import * as React from 'react'
@@ -169,6 +169,10 @@ function NavBar() {
           Chart
         </Link>
       </nav>
+
+      <div className="ml-auto mr-3 flex items-center">
+        <UserButton afterSignOutUrl="/login" />
+      </div>
     </header>
   )
 }
