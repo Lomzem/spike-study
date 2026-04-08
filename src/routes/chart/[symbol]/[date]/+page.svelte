@@ -27,7 +27,17 @@ onMount(() => {
 
 	chart.timeScale().fitContent();
 
+    const resizeObserver = new ResizeObserver(() => {
+        if (!chartElement) return;
+        const width = chartElement.clientWidth;
+        const height = chartElement.clientHeight;
+        if (width <= 0 || height <= 0) return;
+        chart.resize(width, height);
+    });
+    resizeObserver.observe(chartElement);
+
 	return () => {
+        resizeObserver.disconnect();
 		chart.remove();
 	};
 });
