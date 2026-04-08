@@ -194,7 +194,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
 <svelte:head>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </svelte:head>
 
 <main
@@ -216,41 +216,40 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
   <!-- Top bar -->
   <header class="relative z-10 flex items-center justify-between border-b px-5 py-3" style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);">
     <!-- Left: Symbol + Price -->
-    <div class="flex items-center gap-5">
-      <div class="flex items-baseline gap-3">
-        <h1
-          class="tracking-tight"
-          style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
-        >
-          {data.symbol}
-        </h1>
-        {#if activeRow}
-          <span
-            class="tabular-nums"
-            style="font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 400; color: #e8dcc8;"
-          >
-            {formatPrice(activeRow.close)}
-          </span>
-          {@const change = priceChange()}
-          <Badge
-            variant="outline"
-            class="gap-1 border-0 px-2 py-0.5"
-            style="background: {change.positive ? 'rgba(90, 138, 92, 0.15)' : 'rgba(196, 120, 58, 0.15)'}; color: {change.positive ? '#7ab87c' : '#d4935a'}; font-family: 'DM Mono', monospace; font-size: 0.7rem;"
-          >
-            {#if change.positive}
-              <TrendingUp size={12} />
-            {:else}
-              <TrendingDown size={12} />
-            {/if}
-            {change.positive ? '+' : ''}{change.percent.toFixed(2)}%
-          </Badge>
-        {/if}
-      </div>
+    <div class="flex items-center gap-5" style="font-family: 'DM Mono', monospace;">
+      <h1
+        class="tracking-tight"
+        style="font-family: 'Rubik', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
+      >
+        {data.symbol}
+      </h1>
 
-      <Separator orientation="vertical" class="h-6" style="background: var(--forest-mist);" />
+      {#if activeRow}
+        <span
+          class="tabular-nums"
+          style="font-size: 1.1rem; font-weight: 400; color: #e8dcc8; line-height: 1;"
+        >
+          {formatPrice(activeRow.close)}
+        </span>
+        {@const change = priceChange()}
+        <Badge
+          variant="outline"
+          class="gap-1 border-0 px-2 py-0.5"
+          style="background: {change.positive ? 'rgba(90, 138, 92, 0.15)' : 'rgba(196, 120, 58, 0.15)'}; color: {change.positive ? '#7ab87c' : '#d4935a'}; font-size: 0.7rem;"
+        >
+          {#if change.positive}
+            <TrendingUp size={12} />
+          {:else}
+            <TrendingDown size={12} />
+          {/if}
+          {change.positive ? '+' : ''}{change.percent.toFixed(2)}%
+        </Badge>
+      {/if}
+
+      <Separator orientation="vertical" class="h-5" style="background: var(--forest-mist);" />
 
       <!-- OHLCV Row -->
-      <div class="flex items-center gap-4" style="font-family: 'DM Mono', monospace; font-size: 0.7rem;">
+      <div class="flex items-center gap-4" style="font-size: 0.7rem;">
         {#each [
           { label: 'O', value: formatPrice(activeRow?.open), key: 'open' },
           { label: 'H', value: formatPrice(activeRow?.high), key: 'high' },
@@ -259,7 +258,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
         ] as item}
           <Tooltip.Root>
             <Tooltip.Trigger>
-              <span class="flex items-baseline gap-1.5">
+              <span class="flex items-center gap-1.5">
                 <span style="color: var(--forest-moss); text-transform: uppercase; letter-spacing: 0.1em;">{item.label}</span>
                 <span style="color: #e8dcc8; font-weight: 500;">{item.value}</span>
               </span>
@@ -270,7 +269,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           </Tooltip.Root>
         {/each}
 
-        <Separator orientation="vertical" class="h-4" style="background: var(--forest-mist);" />
+        <Separator orientation="vertical" class="h-3.5" style="background: var(--forest-mist);" />
 
         <Tooltip.Root>
           <Tooltip.Trigger>
@@ -357,7 +356,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     <div class="flex flex-1 items-center justify-center px-4">
       <Card.Root class="border-0" style="background: var(--forest-bark); max-width: 24rem;">
         <Card.Header>
-          <Card.Title style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--forest-gold);">
+          <Card.Title style="font-family: 'Rubik', sans-serif; font-size: 1.25rem; color: var(--forest-gold);">
             No Data Available
           </Card.Title>
           <Card.Description style="color: var(--forest-moss); font-family: 'DM Mono', monospace; font-size: 0.75rem;">
