@@ -523,4 +523,27 @@ let sidebarOpen = $state(false);
     transform: translateY(0);
   }
 }
+
+/* Scrollbar — thin bark-and-gold track */
+main ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+main ::-webkit-scrollbar-track {
+  background: rgba(30, 26, 17, 0.6);
+}
+main ::-webkit-scrollbar-thumb {
+  background: rgba(196, 164, 106, 0.25);
+  border-radius: 0;
+}
+main ::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 164, 106, 0.45);
+}
+main ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+main {
+  scrollbar-color: rgba(196, 164, 106, 0.25) rgba(30, 26, 17, 0.6);
+  scrollbar-width: thin;
+}
 </style>
