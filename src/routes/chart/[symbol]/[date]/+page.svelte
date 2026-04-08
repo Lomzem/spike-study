@@ -2,6 +2,10 @@
 import { goto } from '$app/navigation';
 import { Button } from '$lib/components/ui/button';
 import { Calendar } from '$lib/components/ui/calendar';
+import * as Card from '$lib/components/ui/card';
+import { Badge } from '$lib/components/ui/badge';
+import { Separator } from '$lib/components/ui/separator';
+import * as Tooltip from '$lib/components/ui/tooltip';
 import * as Popover from '$lib/components/ui/popover';
 import { parseDate, type DateValue } from '@internationalized/date';
 import {
@@ -12,6 +16,12 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import type { Attachment } from 'svelte/attachments';
+import CalendarDays from '@lucide/svelte/icons/calendar-days';
+import TrendingUp from '@lucide/svelte/icons/trending-up';
+import TrendingDown from '@lucide/svelte/icons/trending-down';
+import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+import ArrowRight from '@lucide/svelte/icons/arrow-right';
+import BarChart3 from '@lucide/svelte/icons/bar-chart-3';
 
 let { data } = $props();
 
@@ -32,6 +42,21 @@ let activeRow = $state<(typeof chartRows)[number] | null>(null);
 
 const chartRowsByTime = $derived(new Map(chartRows.map((row) => [row.chartTime, row])));
 
+const priceChange = $derived(() => {
+  if (!activeRow) return { value: 0, percent: 0, positive: true };
+  const change = activeRow.close - activeRow.open;
+  const percent = activeRow.open !== 0 ? (change / activeRow.open) * 100 : 0;
+  return { value: change, percent, positive: change >= 0 };
+});
+
+const currentDateIndex = $derived(data.availableDates.indexOf(data.date));
+const prevDate = $derived(currentDateIndex > 0 ? data.availableDates[currentDateIndex - 1] : null);
+const nextDate = $derived(
+  currentDateIndex < data.availableDates.length - 1
+    ? data.availableDates[currentDateIndex + 1]
+    : null,
+);
+
 $effect(() => {
   activeRow = defaultRow;
 });
@@ -50,9 +75,12 @@ function isSelectableDate(date: string) {
 
 function navigateToDate(date: string) {
   if (date === data.date || !isSelectableDate(date)) return;
-
   isDatePickerOpen = false;
   void goto(`/chart/${encodeURIComponent(data.symbol)}/${date}`);
+}
+
+function goToDate(date: string | null) {
+  if (date) navigateToDate(date);
 }
 
 function handleCalendarChange(date: DateValue | undefined) {
@@ -65,10 +93,40 @@ function isCalendarDateDisabled(date: DateValue) {
   return dateString !== data.date && !isSelectableDate(dateString);
 }
 
+function formatPrice(n: number | undefined) {
+  if (n == null) return '--';
+  return n.toFixed(2);
+}
+
+function formatVolume(n: number | undefined) {
+  if (n == null) return '--';
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
 const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
   const chart = createChart(chartElement, {
+    layout: {
+      background: { color: 'transparent' },
+      textColor: '#8b7e6a',
+      fontFamily: "'DM Mono', monospace",
+      fontSize: 11,
+    },
+    grid: {
+      vertLines: { color: 'rgba(139, 126, 106, 0.08)' },
+      horzLines: { color: 'rgba(139, 126, 106, 0.08)' },
+    },
+    crosshair: {
+      vertLine: { color: 'rgba(196, 164, 106, 0.3)', labelBackgroundColor: '#2a2318' },
+      horzLine: { color: 'rgba(196, 164, 106, 0.3)', labelBackgroundColor: '#2a2318' },
+    },
     timeScale: {
       timeVisible: true,
+      borderColor: 'rgba(139, 126, 106, 0.15)',
+    },
+    rightPriceScale: {
+      borderColor: 'rgba(139, 126, 106, 0.15)',
     },
     width: chartElement.clientWidth,
     height: chartElement.clientHeight,
@@ -77,11 +135,11 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
   const candlestickSeries = chart.addSeries(
     CandlestickSeries,
     {
-      upColor: '#26a69a',
-      downColor: '#ef5350',
+      upColor: '#5a8a5c',
+      downColor: '#c4783a',
       borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
+      wickUpColor: '#5a8a5c',
+      wickDownColor: '#c4783a',
     },
     0,
   );
@@ -100,7 +158,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     chartRows.map((row) => ({
       time: row.chartTime,
       value: row.volume,
-      color: row.close > row.open ? '#26a69a' : '#ef5350',
+      color: row.close > row.open ? 'rgba(90, 138, 92, 0.5)' : 'rgba(196, 120, 58, 0.5)',
     })),
   );
 
@@ -109,7 +167,6 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
       resetActiveRow();
       return;
     }
-
     activeRow = chartRowsByTime.get(param.time as UTCTimestamp) ?? defaultRow;
   };
 
@@ -134,45 +191,211 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
 };
 </script>
 
-<main class="flex h-dvh w-dvw flex-col">
-  <div class="flex flex-wrap items-start gap-3 border-b px-4 py-3 text-sm">
-    <div class="flex flex-wrap items-center gap-2">
-      <label class="flex flex-col gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-        Chart Date
-        <Popover.Root bind:open={isDatePickerOpen}>
-          <Popover.Trigger>
-            <Button type="button" variant="outline" class="w-36 justify-start font-normal">
-              {data.date}
-            </Button>
-          </Popover.Trigger>
-          <Popover.Content align="start" class="w-auto p-0">
-            <Calendar
-              type="single"
-              value={selectedCalendarDate}
-              placeholder={selectedCalendarDate}
-              onValueChange={handleCalendarChange}
-              isDateDisabled={isCalendarDateDisabled}
-              initialFocus
-            />
-          </Popover.Content>
-        </Popover.Root>
-      </label>
+<svelte:head>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</svelte:head>
+
+<main
+  class="relative flex h-dvh w-dvw flex-col overflow-hidden"
+  style="
+    background: #1a1610;
+    --forest-gold: #c4a46a;
+    --forest-green: #5a8a5c;
+    --forest-amber: #c4783a;
+    --forest-bark: #2a2318;
+    --forest-moss: #8b7e6a;
+    --forest-canopy: #1a1610;
+    --forest-mist: rgba(139, 126, 106, 0.15);
+  "
+>
+  <!-- Subtle grain texture overlay -->
+  <div class="pointer-events-none absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,<svg viewBox=&quot;0 0 256 256&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><filter id=&quot;n&quot;><feTurbulence type=&quot;fractalNoise&quot; baseFrequency=&quot;0.9&quot; numOctaves=&quot;4&quot; stitchTiles=&quot;stitch&quot;/></filter><rect width=&quot;100%25&quot; height=&quot;100%25&quot; filter=&quot;url(%23n)&quot;/></svg>'); background-repeat: repeat; background-size: 256px 256px;"></div>
+
+  <!-- Top bar -->
+  <header class="relative z-10 flex items-center justify-between border-b px-5 py-3" style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);">
+    <!-- Left: Symbol + Price -->
+    <div class="flex items-center gap-5">
+      <div class="flex items-baseline gap-3">
+        <h1
+          class="tracking-tight"
+          style="font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
+        >
+          {data.symbol}
+        </h1>
+        {#if activeRow}
+          <span
+            class="tabular-nums"
+            style="font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 400; color: #e8dcc8;"
+          >
+            {formatPrice(activeRow.close)}
+          </span>
+          {@const change = priceChange()}
+          <Badge
+            variant="outline"
+            class="gap-1 border-0 px-2 py-0.5"
+            style="background: {change.positive ? 'rgba(90, 138, 92, 0.15)' : 'rgba(196, 120, 58, 0.15)'}; color: {change.positive ? '#7ab87c' : '#d4935a'}; font-family: 'DM Mono', monospace; font-size: 0.7rem;"
+          >
+            {#if change.positive}
+              <TrendingUp size={12} />
+            {:else}
+              <TrendingDown size={12} />
+            {/if}
+            {change.positive ? '+' : ''}{change.percent.toFixed(2)}%
+          </Badge>
+        {/if}
+      </div>
+
+      <Separator orientation="vertical" class="h-6" style="background: var(--forest-mist);" />
+
+      <!-- OHLCV Row -->
+      <div class="flex items-center gap-4" style="font-family: 'DM Mono', monospace; font-size: 0.7rem;">
+        {#each [
+          { label: 'O', value: formatPrice(activeRow?.open), key: 'open' },
+          { label: 'H', value: formatPrice(activeRow?.high), key: 'high' },
+          { label: 'L', value: formatPrice(activeRow?.low), key: 'low' },
+          { label: 'C', value: formatPrice(activeRow?.close), key: 'close' },
+        ] as item}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <span class="flex items-baseline gap-1.5">
+                <span style="color: var(--forest-moss); text-transform: uppercase; letter-spacing: 0.1em;">{item.label}</span>
+                <span style="color: #e8dcc8; font-weight: 500;">{item.value}</span>
+              </span>
+            </Tooltip.Trigger>
+            <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+              {item.key === 'open' ? 'Open' : item.key === 'high' ? 'High' : item.key === 'low' ? 'Low' : 'Close'}
+            </Tooltip.Content>
+          </Tooltip.Root>
+        {/each}
+
+        <Separator orientation="vertical" class="h-4" style="background: var(--forest-mist);" />
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <span class="flex items-center gap-1.5">
+              <BarChart3 size={12} style="color: var(--forest-moss);" />
+              <span style="color: #e8dcc8; font-weight: 500;">{formatVolume(activeRow?.volume)}</span>
+            </span>
+          </Tooltip.Trigger>
+          <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+            Volume: {activeRow?.volume.toLocaleString() ?? '--'}
+          </Tooltip.Content>
+        </Tooltip.Root>
+      </div>
     </div>
-    <div class="flex flex-wrap gap-x-4 gap-y-2 pt-1">
-      <span><strong>Symbol:</strong> {data.symbol}</span>
-      <span><strong>Date:</strong> {data.date}</span>
-      <span><strong>Open:</strong> {activeRow?.open}</span>
-      <span><strong>High:</strong> {activeRow?.high}</span>
-      <span><strong>Low:</strong> {activeRow?.low}</span>
-      <span><strong>Close:</strong> {activeRow?.close}</span>
-      <span><strong>Volume:</strong> {activeRow?.volume.toLocaleString()}</span>
+
+    <!-- Right: Date Navigation -->
+    <div class="flex items-center gap-2">
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="h-7 w-7 p-0"
+            style="color: var(--forest-moss);"
+            disabled={!prevDate}
+            onclick={() => goToDate(prevDate)}
+          >
+            <ArrowLeft size={14} />
+          </Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+          Previous date
+        </Tooltip.Content>
+      </Tooltip.Root>
+
+      <Popover.Root bind:open={isDatePickerOpen}>
+        <Popover.Trigger>
+          <Button
+            type="button"
+            variant="outline"
+            class="h-7 gap-2 border px-3 text-xs"
+            style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8; font-family: 'DM Mono', monospace;"
+          >
+            <CalendarDays size={12} style="color: var(--forest-moss);" />
+            {data.date}
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content align="end" class="w-auto p-0" style="background: var(--forest-bark); border-color: var(--forest-mist);">
+          <Calendar
+            type="single"
+            value={selectedCalendarDate}
+            placeholder={selectedCalendarDate}
+            onValueChange={handleCalendarChange}
+            isDateDisabled={isCalendarDateDisabled}
+            initialFocus
+          />
+        </Popover.Content>
+      </Popover.Root>
+
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="h-7 w-7 p-0"
+            style="color: var(--forest-moss);"
+            disabled={!nextDate}
+            onclick={() => goToDate(nextDate)}
+          >
+            <ArrowRight size={14} />
+          </Button>
+        </Tooltip.Trigger>
+        <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+          Next date
+        </Tooltip.Content>
+      </Tooltip.Root>
     </div>
-  </div>
+  </header>
+
+  <!-- Chart area -->
   {#if data.intradayData.length === 0}
     <div class="flex flex-1 items-center justify-center px-4">
-      <span class="text-center text-xl">No data for {data.symbol} on {data.date}</span>
+      <Card.Root class="border-0" style="background: var(--forest-bark); max-width: 24rem;">
+        <Card.Header>
+          <Card.Title style="font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--forest-gold);">
+            No Data Available
+          </Card.Title>
+          <Card.Description style="color: var(--forest-moss); font-family: 'DM Mono', monospace; font-size: 0.75rem;">
+            No intraday data exists for {data.symbol} on {data.date}.
+          </Card.Description>
+        </Card.Header>
+        {#if prevDate || nextDate}
+          <Card.Footer class="gap-2" style="border-color: var(--forest-mist);">
+            {#if prevDate}
+              <Button
+                variant="outline"
+                size="sm"
+                class="text-xs"
+                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'DM Mono', monospace;"
+                onclick={() => goToDate(prevDate)}
+              >
+                <ArrowLeft size={12} /> {prevDate}
+              </Button>
+            {/if}
+            {#if nextDate}
+              <Button
+                variant="outline"
+                size="sm"
+                class="text-xs"
+                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'DM Mono', monospace;"
+                onclick={() => goToDate(nextDate)}
+              >
+                {nextDate} <ArrowRight size={12} />
+              </Button>
+            {/if}
+          </Card.Footer>
+        {/if}
+      </Card.Root>
     </div>
   {:else}
-    <div class="min-h-0 flex-1" {@attach createChartAttachment}></div>
+    <div class="relative min-h-0 flex-1" {@attach createChartAttachment}></div>
   {/if}
+
+  <!-- Bottom accent line -->
+  <div class="h-px w-full" style="background: linear-gradient(90deg, transparent, var(--forest-gold), transparent);"></div>
 </main>
