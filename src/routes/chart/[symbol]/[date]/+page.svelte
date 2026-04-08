@@ -20,7 +20,6 @@ import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 import ArrowRight from '@lucide/svelte/icons/arrow-right';
 import BarChart3 from '@lucide/svelte/icons/bar-chart-3';
 
-
 let { data } = $props();
 
 const availableDateSet = $derived(new Set(data.availableDates));
@@ -291,7 +290,6 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
         </Tooltip.Root>
       </div>
     </div>
-
   </header>
 
   <!-- Chart area -->
@@ -299,14 +297,10 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     <div class="flex flex-1 items-center justify-center px-4">
       <Card.Root class="border-0" style="background: var(--forest-bark); max-width: 24rem;">
         <Card.Header>
-          <Card.Title
-            style="font-size: 1.5rem; color: var(--forest-gold);"
-          >
+          <Card.Title style="font-size: 1.5rem; color: var(--forest-gold);">
             No Data Available
           </Card.Title>
-          <Card.Description
-            style="color: var(--forest-moss); font-size: 0.925rem;"
-          >
+          <Card.Description style="color: var(--forest-moss); font-size: 0.925rem;">
             No intraday data exists for {data.symbol} on {data.date}.
           </Card.Description>
         </Card.Header>

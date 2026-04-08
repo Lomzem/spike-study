@@ -52,9 +52,7 @@ const isChart = $derived(page.url.pathname.startsWith('/chart'));
           <ClerkLoading>
             <div class="h-6 w-6 rounded-full" style="background: rgba(139, 126, 106, 0.15);"></div>
           </ClerkLoading>
-          <ClerkLoaded>
-            <UserButton signInUrl="/sign-in" />
-          </ClerkLoaded>
+          <ClerkLoaded> <UserButton signInUrl="/sign-in" /> </ClerkLoaded>
         </div>
       </nav>
     {/if}
