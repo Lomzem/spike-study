@@ -5,4 +5,8 @@
 <h1>{data.symbol}</h1>
 <p>{data.date}</p>
 
-<pre>{JSON.stringify(data.intradayData, null, 2)}</pre>
+{#if data.intradayData.length === 0}
+	<p>No data found for {data.symbol} on {data.date}</p>
+{:else}
+	<pre>{JSON.stringify(data.intradayData, null, 2)}</pre>
+{/if}

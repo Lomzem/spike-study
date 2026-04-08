@@ -7,7 +7,8 @@ export const load: PageServerLoad = async ({ params }) => {
 	const { symbol, date } = params;
 
 	const intradayData = await db.query.intradayStocksTable.findMany({
-		where: and(eq(intradayStocksTable.symbol, symbol), eq(intradayStocksTable.date, date))
+		where: and(eq(intradayStocksTable.symbol, symbol), eq(intradayStocksTable.date, date)),
+		orderBy: intradayStocksTable.time
 	});
 
 	return {
