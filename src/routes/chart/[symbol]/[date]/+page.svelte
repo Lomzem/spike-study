@@ -215,8 +215,8 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     class="relative z-10 flex items-center justify-between border-b px-5 py-3"
     style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);"
   >
-    <!-- Left: Symbol + Price -->
-    <div class="flex items-center gap-5" style="font-family: 'Rubik', sans-serif;">
+    <!-- Left: Symbol + Date Navigation + OHLCV -->
+    <div class="flex items-center gap-4" style="font-family: 'Rubik', sans-serif;">
       <h1
         class="tracking-tight"
         style="font-size: 1.75rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
@@ -224,14 +224,78 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
         {data.symbol}
       </h1>
 
-      {#if activeRow}
-        <span
-          class="tabular-nums"
-          style="font-size: 1.35rem; font-weight: 400; color: #e8dcc8; line-height: 1;"
-        >
-          {formatPrice(activeRow.close)}
-        </span>
-      {/if}
+      <!-- Date Navigation -->
+      <div class="flex items-center gap-1.5">
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="h-8 w-8 p-0"
+              style="color: var(--forest-moss);"
+              disabled={!prevDate}
+              onclick={() => goToDate(prevDate)}
+            >
+              <ArrowLeft size={16} />
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content
+            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
+          >
+            Previous date
+          </Tooltip.Content>
+        </Tooltip.Root>
+
+        <Popover.Root bind:open={isDatePickerOpen}>
+          <Popover.Trigger>
+            <Button
+              type="button"
+              variant="outline"
+              class="h-9 gap-2.5 border px-4 text-base"
+              style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8; font-family: 'Rubik', sans-serif;"
+            >
+              <CalendarDays size={16} style="color: var(--forest-moss);" />
+              {data.date}
+            </Button>
+          </Popover.Trigger>
+          <Popover.Content
+            align="start"
+            class="w-auto p-0"
+            style="--popover: #2a2318; --popover-foreground: #e8dcc8; --accent: #3a3228; --accent-foreground: #e8dcc8; --muted: #3a3228; --muted-foreground: #8b7e6a; --foreground: #e8dcc8; --ring: #c4a46a; border-color: var(--forest-mist);"
+          >
+            <Calendar
+              type="single"
+              value={selectedCalendarDate}
+              placeholder={selectedCalendarDate}
+              onValueChange={handleCalendarChange}
+              isDateDisabled={isCalendarDateDisabled}
+              initialFocus
+            />
+          </Popover.Content>
+        </Popover.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="h-8 w-8 p-0"
+              style="color: var(--forest-moss);"
+              disabled={!nextDate}
+              onclick={() => goToDate(nextDate)}
+            >
+              <ArrowRight size={16} />
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content
+            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
+          >
+            Next date
+          </Tooltip.Content>
+        </Tooltip.Root>
+      </div>
 
       <Separator orientation="vertical" class="h-5" style="background: var(--forest-mist);" />
 
@@ -281,80 +345,8 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
       </div>
     </div>
 
-    <!-- Right: Date Navigation + UserButton -->
-    <div class="flex items-center gap-3">
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-7 w-7 p-0"
-            style="color: var(--forest-moss);"
-            disabled={!prevDate}
-            onclick={() => goToDate(prevDate)}
-          >
-            <ArrowLeft size={14} />
-          </Button>
-        </Tooltip.Trigger>
-        <Tooltip.Content
-          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
-        >
-          Previous date
-        </Tooltip.Content>
-      </Tooltip.Root>
-
-      <Popover.Root bind:open={isDatePickerOpen}>
-        <Popover.Trigger>
-          <Button
-            type="button"
-            variant="outline"
-            class="h-8 gap-2 border px-3 text-sm"
-            style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8; font-family: 'Rubik', sans-serif;"
-          >
-            <CalendarDays size={14} style="color: var(--forest-moss);" />
-            {data.date}
-          </Button>
-        </Popover.Trigger>
-        <Popover.Content
-          align="end"
-          class="w-auto p-0"
-          style="--popover: #2a2318; --popover-foreground: #e8dcc8; --accent: #3a3228; --accent-foreground: #e8dcc8; --muted: #3a3228; --muted-foreground: #8b7e6a; --foreground: #e8dcc8; --ring: #c4a46a; border-color: var(--forest-mist);"
-        >
-          <Calendar
-            type="single"
-            value={selectedCalendarDate}
-            placeholder={selectedCalendarDate}
-            onValueChange={handleCalendarChange}
-            isDateDisabled={isCalendarDateDisabled}
-            initialFocus
-          />
-        </Popover.Content>
-      </Popover.Root>
-
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-7 w-7 p-0"
-            style="color: var(--forest-moss);"
-            disabled={!nextDate}
-            onclick={() => goToDate(nextDate)}
-          >
-            <ArrowRight size={14} />
-          </Button>
-        </Tooltip.Trigger>
-        <Tooltip.Content
-          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
-        >
-          Next date
-        </Tooltip.Content>
-      </Tooltip.Root>
-
-      <Separator orientation="vertical" class="h-5" style="background: var(--forest-mist);" />
-
+    <!-- Right: UserButton -->
+    <div class="flex items-center">
       <div class="flex h-7 w-7 items-center justify-center">
         <ClerkLoading>
           <div class="h-7 w-7 rounded-full" style="background: var(--forest-mist);"></div>
