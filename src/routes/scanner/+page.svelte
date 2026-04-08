@@ -175,6 +175,27 @@ let sidebarOpen = $state(false);
 
     <form method="GET" class="flex min-h-0 flex-1 flex-col">
       <div class="flex-1 space-y-1 overflow-y-auto px-4 py-4">
+        <!-- Date range -->
+        {#each [
+          { name: 'minDate', label: 'Min date', value: data.filters.minDate },
+          { name: 'maxDate', label: 'Max date', value: data.filters.maxDate },
+        ] as field}
+          <label class="block py-1.5">
+            <span
+              class="mb-1 block text-[0.625rem] font-semibold uppercase tracking-[0.2em]"
+              style="color: var(--moss);">{field.label}</span>
+            <input
+              name={field.name}
+              type="date"
+              value={field.value}
+              class="h-8 w-full border-b bg-transparent px-0 font-mono text-sm outline-none transition-colors focus:border-b-[var(--gold)]"
+              style="border-color: var(--mist); color: var(--cream); color-scheme: dark;"
+            />
+          </label>
+        {/each}
+
+        <div class="h-2"></div>
+
         <!-- Comma-formatted fields -->
         {#each [
           { label: 'Min volume', display: minVolumeDisplay, raw: minVolumeRaw, hiddenName: 'minVolume', handler: (v: string) => minVolumeDisplay = commaFormat(v), inputmode: 'numeric' as const },

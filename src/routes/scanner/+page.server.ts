@@ -82,6 +82,8 @@ function parsePageSize(value: string | null) {
 }
 
 export const load: PageServerLoad = async ({ url }) => {
+  const minDate = url.searchParams.get('minDate')?.trim() || '';
+  const maxDate = url.searchParams.get('maxDate')?.trim() || '';
   const minVolume = parseOptionalInteger(url.searchParams.get('minVolume'));
   const minTrades = parseOptionalInteger(url.searchParams.get('minTrades'));
   const minPrice = parseOptionalNumber(url.searchParams.get('minPrice'));
@@ -97,6 +99,8 @@ export const load: PageServerLoad = async ({ url }) => {
 
   const conditions: Array<SQL> = [];
 
+  if (minDate) conditions.push(gte(dailyStocksTable.date, minDate));
+  if (maxDate) conditions.push(lte(dailyStocksTable.date, maxDate));
   if (minVolume.value != null) conditions.push(gte(dailyStocksTable.volume, minVolume.value));
   if (minTrades.value != null) conditions.push(gte(dailyStocksTable.trades, minTrades.value));
   if (minPrice.value != null) conditions.push(gte(dailyStocksTable.open, minPrice.value));
@@ -145,6 +149,8 @@ export const load: PageServerLoad = async ({ url }) => {
       directions: SORT_DIRECTIONS,
     },
     filters: {
+      minDate,
+      maxDate,
       minVolume: minVolume.raw,
       minTrades: minTrades.raw,
       minPrice: minPrice.raw,

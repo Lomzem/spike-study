@@ -220,7 +220,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           <Button
             type="button"
             variant="outline"
-            class="h-9 gap-2.5 border px-4 text-base"
+            class="h-9 gap-2.5 border px-4 font-mono text-sm tabular-nums"
             style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8;"
           >
             <CalendarDays size={16} style="color: var(--forest-moss);" />
@@ -229,7 +229,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
         </Popover.Trigger>
         <Popover.Content
           align="start"
-          class="w-auto p-0"
+          class="w-auto p-0 font-mono tabular-nums"
           style="--popover: #2a2318; --popover-foreground: #e8dcc8; --accent: #3a3228; --accent-foreground: #e8dcc8; --muted: #3a3228; --muted-foreground: #8b7e6a; --foreground: #e8dcc8; --ring: #c4a46a; border-color: var(--forest-mist);"
         >
           <Calendar
