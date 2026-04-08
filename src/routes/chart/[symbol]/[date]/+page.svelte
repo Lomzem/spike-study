@@ -1,12 +1,39 @@
 <script lang="ts">
+	import {
+		CandlestickSeries,
+		createChart,
+		LineSeries,
+		type UTCTimestamp
+	} from 'lightweight-charts';
+	import { onMount } from 'svelte';
+
 	let { data } = $props();
+
+	let chartElement: HTMLElement | undefined;
+
+	onMount(() => {
+		if (!chartElement) return;
+		if (data.intradayData.length === 0) return;
+
+		const chart = createChart(chartElement, {
+			width: chartElement.clientWidth,
+			height: chartElement.clientHeight
+		});
+
+		const lineSeries = chart.addSeries(LineSeries, {});
+		lineSeries.setData(
+			data.intradayData.map((row) => ({
+				time: row.time as UTCTimestamp,
+				value: row.close
+			}))
+		);
+
+		chart.timeScale().fitContent();
+
+		return () => {
+			chart.remove();
+		};
+	});
 </script>
 
-<h1>{data.symbol}</h1>
-<p>{data.date}</p>
-
-{#if data.intradayData.length === 0}
-	<p>No data found for {data.symbol} on {data.date}</p>
-{:else}
-	<pre>{JSON.stringify(data.intradayData, null, 2)}</pre>
-{/if}
+<main bind:this={chartElement} class="h-dvh w-dvw"></main>
