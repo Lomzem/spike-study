@@ -20,7 +20,7 @@ const isChart = $derived(page.url.pathname.startsWith('/chart'));
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
   <link
-    href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Rubik:wght@700&display=swap"
     rel="stylesheet"
   >
 </svelte:head>
@@ -29,7 +29,7 @@ const isChart = $derived(page.url.pathname.startsWith('/chart'));
     {#if !isPublicRoute}
       <nav
         class="relative z-20 flex items-center justify-between border-b px-5 py-1.5"
-        style="border-color: rgba(139, 126, 106, 0.15); background: rgba(26, 22, 16, 0.95); backdrop-filter: blur(12px); font-family: 'Rubik', sans-serif;"
+        style="border-color: rgba(139, 126, 106, 0.15); background: rgba(26, 22, 16, 0.95); backdrop-filter: blur(12px);"
       >
         <div class="flex items-center gap-1">
           <a

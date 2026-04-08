@@ -101,7 +101,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     layout: {
       background: { color: 'transparent' },
       textColor: '#8b7e6a',
-      fontFamily: "'Rubik', sans-serif",
+      fontFamily: "'Geist Variable', sans-serif",
       fontSize: 12,
     },
     grid: {
@@ -207,10 +207,10 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);"
   >
     <!-- Left: Symbol + Date Navigation + OHLCV -->
-    <div class="flex items-center gap-4" style="font-family: 'Rubik', sans-serif;">
+    <div class="flex items-center gap-4">
       <h1
         class="tracking-tight"
-        style="font-size: 1.75rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
+        style="font-family: 'Rubik', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
       >
         {data.symbol}
       </h1>
@@ -222,7 +222,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             type="button"
             variant="outline"
             class="h-9 gap-2.5 border px-4 text-base"
-            style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8; font-family: 'Rubik', sans-serif;"
+            style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8;"
           >
             <CalendarDays size={16} style="color: var(--forest-moss);" />
             {data.date}
@@ -265,7 +265,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
               </span>
             </Tooltip.Trigger>
             <Tooltip.Content
-              style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
+              style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist);"
             >
               {item.key === 'open' ? 'Open' : item.key === 'high' ? 'High' : item.key === 'low' ? 'Low' : 'Close'}
             </Tooltip.Content>
@@ -284,7 +284,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content
-            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
+            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist);"
           >
             Volume: {activeRow?.volume.toLocaleString() ?? '--'}
           </Tooltip.Content>
@@ -300,12 +300,12 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
       <Card.Root class="border-0" style="background: var(--forest-bark); max-width: 24rem;">
         <Card.Header>
           <Card.Title
-            style="font-family: 'Rubik', sans-serif; font-size: 1.5rem; color: var(--forest-gold);"
+            style="font-size: 1.5rem; color: var(--forest-gold);"
           >
             No Data Available
           </Card.Title>
           <Card.Description
-            style="color: var(--forest-moss); font-family: 'Rubik', sans-serif; font-size: 0.925rem;"
+            style="color: var(--forest-moss); font-size: 0.925rem;"
           >
             No intraday data exists for {data.symbol} on {data.date}.
           </Card.Description>
@@ -317,7 +317,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
                 variant="outline"
                 size="sm"
                 class="text-xs"
-                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'Rubik', sans-serif;"
+                style="border-color: var(--forest-mist); color: var(--forest-gold);"
                 onclick={() => goToDate(prevDate)}
               >
                 <ArrowLeft size={12} /> {prevDate}
@@ -328,7 +328,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
                 variant="outline"
                 size="sm"
                 class="text-xs"
-                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'Rubik', sans-serif;"
+                style="border-color: var(--forest-mist); color: var(--forest-gold);"
                 onclick={() => goToDate(nextDate)}
               >
                 {nextDate} <ArrowRight size={12} />
