@@ -359,6 +359,7 @@ let sidebarOpen = $state(false);
   <!-- ═══ Results panel ═══ -->
   <section class="relative flex min-w-0 flex-1 flex-col">
     <!-- Results header -->
+    {#if data.hasScanned}
     <div
       class="flex shrink-0 items-center justify-between border-b px-5 py-3"
       style="border-color: var(--mist); background: rgba(42, 35, 24, 0.3);"
@@ -400,9 +401,16 @@ let sidebarOpen = $state(false);
         </div>
       </div>
     </div>
+    {/if}
 
     <!-- Table -->
-    {#if data.results.length === 0}
+    {#if !data.hasScanned}
+      <div class="flex flex-1 flex-col items-center justify-center gap-4">
+        <div class="h-px w-16" style="background: var(--mist);"></div>
+        <p class="text-sm" style="color: var(--moss);">Set your filters and hit Run Scan.</p>
+        <div class="h-px w-16" style="background: var(--mist);"></div>
+      </div>
+    {:else if data.results.length === 0}
       <div class="flex flex-1 flex-col items-center justify-center gap-4">
         <div class="h-px w-16" style="background: var(--mist);"></div>
         <p class="text-sm" style="color: var(--moss);">No rows match the current scan.</p>

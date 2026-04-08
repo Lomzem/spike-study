@@ -82,6 +82,8 @@ function parsePageSize(value: string | null) {
 }
 
 export const load: PageServerLoad = async ({ url }) => {
+  const hasScanned = url.searchParams.has('page');
+
   const minDate = url.searchParams.get('minDate')?.trim() || '';
   const maxDate = url.searchParams.get('maxDate')?.trim() || '';
   const minVolume = parseOptionalInteger(url.searchParams.get('minVolume'));
@@ -110,6 +112,40 @@ export const load: PageServerLoad = async ({ url }) => {
   if (minRange.value != null) conditions.push(gte(dailyStocksTable.range, minRange.value));
   if (minChange.value != null) conditions.push(gte(dailyStocksTable.change, minChange.value));
 
+  const sharedReturn = {
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    sort: {
+      by: sortBy,
+      dir: sortDir,
+      options: Object.keys(SORT_COLUMNS),
+      directions: SORT_DIRECTIONS,
+    },
+    filters: {
+      minDate,
+      maxDate,
+      minVolume: minVolume.raw,
+      minTrades: minTrades.raw,
+      minPrice: minPrice.raw,
+      maxPrice: maxPrice.raw,
+      minGap: minGap.raw,
+      maxGap: maxGap.raw,
+      minRange: minRange.raw,
+      minChange: minChange.raw,
+    },
+  };
+
+  if (!hasScanned) {
+    return {
+      ...sharedReturn,
+      hasScanned: false,
+      results: [],
+      totalCount: 0,
+      page: 1,
+      pageSize,
+      totalPages: 1,
+    };
+  }
+
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const [{ totalCount }] = await db
@@ -136,29 +172,12 @@ export const load: PageServerLoad = async ({ url }) => {
     .offset(offset);
 
   return {
+    ...sharedReturn,
+    hasScanned: true,
     results,
     totalCount,
     page,
     pageSize,
-    pageSizeOptions: PAGE_SIZE_OPTIONS,
     totalPages,
-    sort: {
-      by: sortBy,
-      dir: sortDir,
-      options: Object.keys(SORT_COLUMNS),
-      directions: SORT_DIRECTIONS,
-    },
-    filters: {
-      minDate,
-      maxDate,
-      minVolume: minVolume.raw,
-      minTrades: minTrades.raw,
-      minPrice: minPrice.raw,
-      maxPrice: maxPrice.raw,
-      minGap: minGap.raw,
-      maxGap: maxGap.raw,
-      minRange: minRange.raw,
-      minChange: minChange.raw,
-    },
   };
 };
