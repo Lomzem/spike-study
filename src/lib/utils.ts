@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-	return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -14,7 +14,7 @@ export function cn(...inputs: ClassValue[]) {
  * @returns The formatted date string in `YYYY-MM-DD` form
  */
 export function toDateString(date: Date) {
-	return `${date.toISOString().split('T')[0]}`;
+  return `${date.toISOString().split('T')[0]}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

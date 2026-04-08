@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createChart, LineSeries, type UTCTimestamp } from 'lightweight-charts';
+import { CandlestickSeries, createChart, type UTCTimestamp } from 'lightweight-charts';
 import { onMount } from 'svelte';
 
 let { data } = $props();
@@ -17,15 +17,22 @@ onMount(() => {
 		height: chartElement.clientHeight
 	});
 
-	const lineSeries = chart.addSeries(LineSeries, {});
-	lineSeries.setData(
-		data.intradayData.map((row) => ({
-			time: Math.floor(row.time / 1000) as UTCTimestamp,
-			value: row.close
-		}))
-	);
-
-	chart.timeScale().fitContent();
+    const candlestickSeries = chart.addSeries(CandlestickSeries, {
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderVisible: false,
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+    });
+    candlestickSeries.setData(
+        data.intradayData.map((row) => ({
+            time: Math.floor(row.time / 1000) as UTCTimestamp,
+            open: row.open,
+            high: row.high,
+            low: row.low,
+            close: row.close
+        }))
+    );
 
     const resizeObserver = new ResizeObserver(() => {
         if (!chartElement) return;

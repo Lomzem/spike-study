@@ -4,16 +4,16 @@ import type { PageServerLoad } from './$types';
 import { intradayStocksTable } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async ({ params }) => {
-	const { symbol, date } = params;
+  const { symbol, date } = params;
 
-	const intradayData = await db.query.intradayStocksTable.findMany({
-		where: and(eq(intradayStocksTable.symbol, symbol), eq(intradayStocksTable.date, date)),
-		orderBy: intradayStocksTable.time
-	});
+  const intradayData = await db.query.intradayStocksTable.findMany({
+    where: and(eq(intradayStocksTable.symbol, symbol), eq(intradayStocksTable.date, date)),
+    orderBy: intradayStocksTable.time,
+  });
 
-	return {
-		symbol,
-		date,
-		intradayData
-	};
+  return {
+    symbol,
+    date,
+    intradayData,
+  };
 };

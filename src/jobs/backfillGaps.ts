@@ -10,8 +10,8 @@ import { db } from '../lib/server/db';
  * and exits the process with code 1.
  */
 async function main() {
-	try {
-		const result = await db.run(sql`
+  try {
+    const result = await db.run(sql`
 			UPDATE daily_stocks_table AS current
 			SET gap = (
 				SELECT (current.open / previous.close - 1)
@@ -26,14 +26,14 @@ async function main() {
 			WHERE gap IS NULL
 				AND current.open IS NOT NULL;
 		`);
-		console.log(`Backfill complete. Rows affected: ${result.rowsAffected}`);
-	} catch (err) {
-		console.error('Failed to backfill gaps:', err);
-		process.exit(1);
-	}
+    console.log(`Backfill complete. Rows affected: ${result.rowsAffected}`);
+  } catch (err) {
+    console.error('Failed to backfill gaps:', err);
+    process.exit(1);
+  }
 }
 
 main().catch((err) => {
-	console.error('Unhandled backfill failure:', err);
-	process.exit(1);
+  console.error('Unhandled backfill failure:', err);
+  process.exit(1);
 });
