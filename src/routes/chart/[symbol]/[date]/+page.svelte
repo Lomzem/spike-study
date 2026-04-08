@@ -3,7 +3,6 @@ import { goto } from '$app/navigation';
 import { Button } from '$lib/components/ui/button';
 import { Calendar } from '$lib/components/ui/calendar';
 import * as Card from '$lib/components/ui/card';
-import { Badge } from '$lib/components/ui/badge';
 import { Separator } from '$lib/components/ui/separator';
 import * as Tooltip from '$lib/components/ui/tooltip';
 import * as Popover from '$lib/components/ui/popover';
@@ -16,9 +15,8 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import type { Attachment } from 'svelte/attachments';
+import { ClerkLoaded, ClerkLoading, UserButton } from 'svelte-clerk';
 import CalendarDays from '@lucide/svelte/icons/calendar-days';
-import TrendingUp from '@lucide/svelte/icons/trending-up';
-import TrendingDown from '@lucide/svelte/icons/trending-down';
 import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 import ArrowRight from '@lucide/svelte/icons/arrow-right';
 import BarChart3 from '@lucide/svelte/icons/bar-chart-3';
@@ -41,13 +39,6 @@ const defaultRow = $derived(chartRows.at(-1) ?? null);
 let activeRow = $state<(typeof chartRows)[number] | null>(null);
 
 const chartRowsByTime = $derived(new Map(chartRows.map((row) => [row.chartTime, row])));
-
-const priceChange = $derived(() => {
-  if (!activeRow) return { value: 0, percent: 0, positive: true };
-  const change = activeRow.close - activeRow.open;
-  const percent = activeRow.open !== 0 ? (change / activeRow.open) * 100 : 0;
-  return { value: change, percent, positive: change >= 0 };
-});
 
 const currentDateIndex = $derived(data.availableDates.indexOf(data.date));
 const prevDate = $derived(currentDateIndex > 0 ? data.availableDates[currentDateIndex - 1] : null);
@@ -110,8 +101,8 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     layout: {
       background: { color: 'transparent' },
       textColor: '#8b7e6a',
-      fontFamily: "'DM Mono', monospace",
-      fontSize: 11,
+      fontFamily: "'Rubik', sans-serif",
+      fontSize: 12,
     },
     grid: {
       vertLines: { color: 'rgba(139, 126, 106, 0.08)' },
@@ -195,7 +186,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Rubik:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   >
 </svelte:head>
@@ -225,10 +216,10 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);"
   >
     <!-- Left: Symbol + Price -->
-    <div class="flex items-center gap-5" style="font-family: 'DM Mono', monospace;">
+    <div class="flex items-center gap-5" style="font-family: 'Rubik', sans-serif;">
       <h1
         class="tracking-tight"
-        style="font-family: 'Rubik', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
+        style="font-size: 1.75rem; font-weight: 700; color: var(--forest-gold); line-height: 1;"
       >
         {data.symbol}
       </h1>
@@ -236,29 +227,16 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
       {#if activeRow}
         <span
           class="tabular-nums"
-          style="font-size: 1.1rem; font-weight: 400; color: #e8dcc8; line-height: 1;"
+          style="font-size: 1.35rem; font-weight: 400; color: #e8dcc8; line-height: 1;"
         >
           {formatPrice(activeRow.close)}
         </span>
-        {@const change = priceChange()}
-        <Badge
-          variant="outline"
-          class="gap-1 border-0 px-2 py-0.5"
-          style="background: {change.positive ? 'rgba(90, 138, 92, 0.15)' : 'rgba(196, 120, 58, 0.15)'}; color: {change.positive ? '#7ab87c' : '#d4935a'}; font-size: 0.7rem;"
-        >
-          {#if change.positive}
-            <TrendingUp size={12} />
-          {:else}
-            <TrendingDown size={12} />
-          {/if}
-          {change.positive ? '+' : ''}{change.percent.toFixed(2)}%
-        </Badge>
       {/if}
 
       <Separator orientation="vertical" class="h-5" style="background: var(--forest-mist);" />
 
       <!-- OHLCV Row -->
-      <div class="flex items-center gap-4" style="font-size: 0.7rem;">
+      <div class="flex items-center gap-4" style="font-size: 0.875rem;">
         {#each [
           { label: 'O', value: formatPrice(activeRow?.open), key: 'open' },
           { label: 'H', value: formatPrice(activeRow?.high), key: 'high' },
@@ -276,7 +254,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
               </span>
             </Tooltip.Trigger>
             <Tooltip.Content
-              style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+              style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
             >
               {item.key === 'open' ? 'Open' : item.key === 'high' ? 'High' : item.key === 'low' ? 'Low' : 'Close'}
             </Tooltip.Content>
@@ -288,14 +266,14 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
         <Tooltip.Root>
           <Tooltip.Trigger>
             <span class="flex items-center gap-1.5">
-              <BarChart3 size={12} style="color: var(--forest-moss);" />
+              <BarChart3 size={14} style="color: var(--forest-moss);" />
               <span style="color: #e8dcc8; font-weight: 500;"
                 >{formatVolume(activeRow?.volume)}</span
               >
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content
-            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
           >
             Volume: {activeRow?.volume.toLocaleString() ?? '--'}
           </Tooltip.Content>
@@ -303,8 +281,8 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
       </div>
     </div>
 
-    <!-- Right: Date Navigation -->
-    <div class="flex items-center gap-2">
+    <!-- Right: Date Navigation + UserButton -->
+    <div class="flex items-center gap-3">
       <Tooltip.Root>
         <Tooltip.Trigger>
           <Button
@@ -320,7 +298,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content
-          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
         >
           Previous date
         </Tooltip.Content>
@@ -331,10 +309,10 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           <Button
             type="button"
             variant="outline"
-            class="h-7 gap-2 border px-3 text-xs"
-            style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8; font-family: 'DM Mono', monospace;"
+            class="h-8 gap-2 border px-3 text-sm"
+            style="border-color: var(--forest-mist); background: transparent; color: #e8dcc8; font-family: 'Rubik', sans-serif;"
           >
-            <CalendarDays size={12} style="color: var(--forest-moss);" />
+            <CalendarDays size={14} style="color: var(--forest-moss);" />
             {data.date}
           </Button>
         </Popover.Trigger>
@@ -369,11 +347,22 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           </Button>
         </Tooltip.Trigger>
         <Tooltip.Content
-          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'Rubik', sans-serif;"
         >
           Next date
         </Tooltip.Content>
       </Tooltip.Root>
+
+      <Separator orientation="vertical" class="h-5" style="background: var(--forest-mist);" />
+
+      <div class="flex h-7 w-7 items-center justify-center">
+        <ClerkLoading>
+          <div class="h-7 w-7 rounded-full" style="background: var(--forest-mist);"></div>
+        </ClerkLoading>
+        <ClerkLoaded>
+          <UserButton signInUrl="/sign-in" />
+        </ClerkLoaded>
+      </div>
     </div>
   </header>
 
@@ -383,12 +372,12 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
       <Card.Root class="border-0" style="background: var(--forest-bark); max-width: 24rem;">
         <Card.Header>
           <Card.Title
-            style="font-family: 'Rubik', sans-serif; font-size: 1.25rem; color: var(--forest-gold);"
+            style="font-family: 'Rubik', sans-serif; font-size: 1.5rem; color: var(--forest-gold);"
           >
             No Data Available
           </Card.Title>
           <Card.Description
-            style="color: var(--forest-moss); font-family: 'DM Mono', monospace; font-size: 0.75rem;"
+            style="color: var(--forest-moss); font-family: 'Rubik', sans-serif; font-size: 0.925rem;"
           >
             No intraday data exists for {data.symbol} on {data.date}.
           </Card.Description>
@@ -400,7 +389,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
                 variant="outline"
                 size="sm"
                 class="text-xs"
-                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'DM Mono', monospace;"
+                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'Rubik', sans-serif;"
                 onclick={() => goToDate(prevDate)}
               >
                 <ArrowLeft size={12} /> {prevDate}
@@ -411,7 +400,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
                 variant="outline"
                 size="sm"
                 class="text-xs"
-                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'DM Mono', monospace;"
+                style="border-color: var(--forest-mist); color: var(--forest-gold); font-family: 'Rubik', sans-serif;"
                 onclick={() => goToDate(nextDate)}
               >
                 {nextDate} <ArrowRight size={12} />
