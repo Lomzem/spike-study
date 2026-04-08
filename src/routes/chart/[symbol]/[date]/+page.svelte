@@ -192,9 +192,12 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
 </script>
 
 <svelte:head>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Rubik:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
 </svelte:head>
 
 <main
@@ -211,10 +214,16 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
   "
 >
   <!-- Subtle grain texture overlay -->
-  <div class="pointer-events-none absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,<svg viewBox=&quot;0 0 256 256&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><filter id=&quot;n&quot;><feTurbulence type=&quot;fractalNoise&quot; baseFrequency=&quot;0.9&quot; numOctaves=&quot;4&quot; stitchTiles=&quot;stitch&quot;/></filter><rect width=&quot;100%25&quot; height=&quot;100%25&quot; filter=&quot;url(%23n)&quot;/></svg>'); background-repeat: repeat; background-size: 256px 256px;"></div>
+  <div
+    class="pointer-events-none absolute inset-0 opacity-[0.03]"
+    style="background-image: url('data:image/svg+xml,<svg viewBox=&quot;0 0 256 256&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><filter id=&quot;n&quot;><feTurbulence type=&quot;fractalNoise&quot; baseFrequency=&quot;0.9&quot; numOctaves=&quot;4&quot; stitchTiles=&quot;stitch&quot;/></filter><rect width=&quot;100%25&quot; height=&quot;100%25&quot; filter=&quot;url(%23n)&quot;/></svg>'); background-repeat: repeat; background-size: 256px 256px;"
+  ></div>
 
   <!-- Top bar -->
-  <header class="relative z-10 flex items-center justify-between border-b px-5 py-3" style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);">
+  <header
+    class="relative z-10 flex items-center justify-between border-b px-5 py-3"
+    style="border-color: var(--forest-mist); background: rgba(26, 22, 16, 0.9); backdrop-filter: blur(12px);"
+  >
     <!-- Left: Symbol + Price -->
     <div class="flex items-center gap-5" style="font-family: 'DM Mono', monospace;">
       <h1
@@ -259,11 +268,16 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           <Tooltip.Root>
             <Tooltip.Trigger>
               <span class="flex items-center gap-1.5">
-                <span style="color: var(--forest-moss); text-transform: uppercase; letter-spacing: 0.1em;">{item.label}</span>
+                <span
+                  style="color: var(--forest-moss); text-transform: uppercase; letter-spacing: 0.1em;"
+                  >{item.label}</span
+                >
                 <span style="color: #e8dcc8; font-weight: 500;">{item.value}</span>
               </span>
             </Tooltip.Trigger>
-            <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+            <Tooltip.Content
+              style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+            >
               {item.key === 'open' ? 'Open' : item.key === 'high' ? 'High' : item.key === 'low' ? 'Low' : 'Close'}
             </Tooltip.Content>
           </Tooltip.Root>
@@ -275,10 +289,14 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
           <Tooltip.Trigger>
             <span class="flex items-center gap-1.5">
               <BarChart3 size={12} style="color: var(--forest-moss);" />
-              <span style="color: #e8dcc8; font-weight: 500;">{formatVolume(activeRow?.volume)}</span>
+              <span style="color: #e8dcc8; font-weight: 500;"
+                >{formatVolume(activeRow?.volume)}</span
+              >
             </span>
           </Tooltip.Trigger>
-          <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+          <Tooltip.Content
+            style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+          >
             Volume: {activeRow?.volume.toLocaleString() ?? '--'}
           </Tooltip.Content>
         </Tooltip.Root>
@@ -301,7 +319,9 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             <ArrowLeft size={14} />
           </Button>
         </Tooltip.Trigger>
-        <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+        <Tooltip.Content
+          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+        >
           Previous date
         </Tooltip.Content>
       </Tooltip.Root>
@@ -318,7 +338,11 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             {data.date}
           </Button>
         </Popover.Trigger>
-        <Popover.Content align="end" class="w-auto p-0" style="--popover: #2a2318; --popover-foreground: #e8dcc8; --accent: #3a3228; --accent-foreground: #e8dcc8; --muted: #3a3228; --muted-foreground: #8b7e6a; --foreground: #e8dcc8; --ring: #c4a46a; border-color: var(--forest-mist);">
+        <Popover.Content
+          align="end"
+          class="w-auto p-0"
+          style="--popover: #2a2318; --popover-foreground: #e8dcc8; --accent: #3a3228; --accent-foreground: #e8dcc8; --muted: #3a3228; --muted-foreground: #8b7e6a; --foreground: #e8dcc8; --ring: #c4a46a; border-color: var(--forest-mist);"
+        >
           <Calendar
             type="single"
             value={selectedCalendarDate}
@@ -344,7 +368,9 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             <ArrowRight size={14} />
           </Button>
         </Tooltip.Trigger>
-        <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+        <Tooltip.Content
+          style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;"
+        >
           Next date
         </Tooltip.Content>
       </Tooltip.Root>
@@ -356,10 +382,14 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
     <div class="flex flex-1 items-center justify-center px-4">
       <Card.Root class="border-0" style="background: var(--forest-bark); max-width: 24rem;">
         <Card.Header>
-          <Card.Title style="font-family: 'Rubik', sans-serif; font-size: 1.25rem; color: var(--forest-gold);">
+          <Card.Title
+            style="font-family: 'Rubik', sans-serif; font-size: 1.25rem; color: var(--forest-gold);"
+          >
             No Data Available
           </Card.Title>
-          <Card.Description style="color: var(--forest-moss); font-family: 'DM Mono', monospace; font-size: 0.75rem;">
+          <Card.Description
+            style="color: var(--forest-moss); font-family: 'DM Mono', monospace; font-size: 0.75rem;"
+          >
             No intraday data exists for {data.symbol} on {data.date}.
           </Card.Description>
         </Card.Header>
@@ -396,5 +426,8 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
   {/if}
 
   <!-- Bottom accent line -->
-  <div class="h-px w-full" style="background: linear-gradient(90deg, transparent, var(--forest-gold), transparent);"></div>
+  <div
+    class="h-px w-full"
+    style="background: linear-gradient(90deg, transparent, var(--forest-gold), transparent);"
+  ></div>
 </main>
