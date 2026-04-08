@@ -25,7 +25,7 @@ const isChart = $derived(page.url.pathname.startsWith('/chart'));
   >
 </svelte:head>
 <ClerkProvider signInUrl="/sign-in" signUpUrl="/sign-up">
-  <div class="min-h-dvh bg-background text-foreground">
+  <div class="min-h-dvh bg-background text-foreground {isChart ? 'h-dvh overflow-hidden' : ''}" >
     {#if !isPublicRoute}
       <nav
         class="relative z-20 flex items-center justify-between border-b px-5 py-1.5"
