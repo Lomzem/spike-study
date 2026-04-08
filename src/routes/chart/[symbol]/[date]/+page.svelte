@@ -263,7 +263,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
                 <span style="color: #e8dcc8; font-weight: 500;">{item.value}</span>
               </span>
             </Tooltip.Trigger>
-            <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+            <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
               {item.key === 'open' ? 'Open' : item.key === 'high' ? 'High' : item.key === 'low' ? 'Low' : 'Close'}
             </Tooltip.Content>
           </Tooltip.Root>
@@ -278,7 +278,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
               <span style="color: #e8dcc8; font-weight: 500;">{formatVolume(activeRow?.volume)}</span>
             </span>
           </Tooltip.Trigger>
-          <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+          <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
             Volume: {activeRow?.volume.toLocaleString() ?? '--'}
           </Tooltip.Content>
         </Tooltip.Root>
@@ -301,7 +301,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             <ArrowLeft size={14} />
           </Button>
         </Tooltip.Trigger>
-        <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+        <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
           Previous date
         </Tooltip.Content>
       </Tooltip.Root>
@@ -344,7 +344,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             <ArrowRight size={14} />
           </Button>
         </Tooltip.Trigger>
-        <Tooltip.Content style="background: var(--forest-bark); color: var(--forest-gold); border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
+        <Tooltip.Content style="--foreground: #2a2318; --background: #c4a46a; border: 1px solid var(--forest-mist); font-family: 'DM Mono', monospace;">
           Next date
         </Tooltip.Content>
       </Tooltip.Root>
