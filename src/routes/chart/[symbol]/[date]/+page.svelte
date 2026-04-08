@@ -319,7 +319,7 @@ const createChartAttachment: Attachment<HTMLElement> = (chartElement) => {
             {data.date}
           </Button>
         </Popover.Trigger>
-        <Popover.Content align="end" class="w-auto p-0" style="background: var(--forest-bark); border-color: var(--forest-mist);">
+        <Popover.Content align="end" class="w-auto p-0" style="--popover: #2a2318; --popover-foreground: #e8dcc8; --accent: #3a3228; --accent-foreground: #e8dcc8; --muted: #3a3228; --muted-foreground: #8b7e6a; --foreground: #e8dcc8; --ring: #c4a46a; border-color: var(--forest-mist);">
           <Calendar
             type="single"
             value={selectedCalendarDate}
