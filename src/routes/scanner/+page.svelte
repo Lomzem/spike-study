@@ -186,9 +186,12 @@ let sidebarOpen = $state(false);
               style="color: var(--moss);">{field.label}</span>
             <input
               name={field.name}
-              type="date"
+              type="text"
               value={field.value}
-              class="h-8 w-full border-b bg-transparent px-0 font-mono text-sm outline-none transition-colors focus:border-b-[var(--gold)]"
+              placeholder="Any"
+              onfocus={(e) => { e.currentTarget.type = 'date'; }}
+              onblur={(e) => { if (!e.currentTarget.value) e.currentTarget.type = 'text'; }}
+              class="h-8 w-full border-b bg-transparent px-0 font-mono text-sm outline-none transition-colors placeholder:font-sans placeholder:text-[var(--moss)]/40 focus:border-b-[var(--gold)]"
               style="border-color: var(--mist); color: var(--cream); color-scheme: dark;"
             />
           </label>
