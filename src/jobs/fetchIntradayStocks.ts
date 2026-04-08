@@ -79,7 +79,7 @@ async function main() {
 	const targetDateArg = process.argv[3];
 	const targetDate = new Date(targetDateArg);
 
-	if (!symbol || isNaN(targetDate.getTime())) {
+	if (!symbol || Number.isNaN(targetDate.getTime())) {
 		console.error('Usage: bun run src/jobs/fetchIntradayStocks.ts <SYMBOL> <YYYY-MM-DD>');
 		process.exit(1);
 	}

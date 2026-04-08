@@ -1,4 +1,4 @@
-# sv
+# spike-study
 
 Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
 
@@ -15,7 +15,7 @@ To recreate this project with the same configuration:
 
 ```sh
 # recreate this project
-bun x sv@0.14.1 create --template minimal --types ts --add tailwindcss="plugins:none" sveltekit-adapter="adapter:vercel" drizzle="database:sqlite+sqlite:turso" prettier eslint --install bun .
+bun x sv@0.14.1 create --template minimal --types ts --add tailwindcss="plugins:none" sveltekit-adapter="adapter:vercel" drizzle="database:sqlite+sqlite:turso" --install bun .
 ```
 
 ## Developing
