@@ -166,7 +166,7 @@ function ScannerPage() {
             date={filters.startDate}
             onSelect={(d) => setFilters((f) => ({ ...f, startDate: d }))}
             onClear={() => setFilters((f) => ({ ...f, startDate: '' }))}
-            className="py-0.5 px-2 w-36 rounded-md border-border bg-surface"
+            className="py-0.5 px-2 w-36 rounded-md border-border bg-surface cursor-pointer"
           />
         </div>
 
@@ -178,7 +178,7 @@ function ScannerPage() {
             date={filters.endDate}
             onSelect={(d) => setFilters((f) => ({ ...f, endDate: d }))}
             onClear={() => setFilters((f) => ({ ...f, endDate: '' }))}
-            className="py-0.5 px-2 w-36 rounded-md border-border bg-surface"
+            className="py-0.5 px-2 w-36 rounded-md border-border bg-surface cursor-pointer"
           />
         </div>
 
@@ -301,7 +301,7 @@ function ScannerPage() {
           </div>
         </div>
 
-        <Button onClick={handleScan} className="shrink-0">
+        <Button onClick={handleScan} className="shrink-0 cursor-pointer">
           Scan
         </Button>
       </section>
