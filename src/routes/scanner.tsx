@@ -164,6 +164,7 @@ function ScannerPage() {
           <DatePicker
             date={filters.startDate}
             onSelect={(d) => setFilters((f) => ({ ...f, startDate: d }))}
+            onClear={() => setFilters((f) => ({ ...f, startDate: '' }))}
             className="py-0.5 px-2 w-36 rounded-md border-border bg-surface"
           />
         </div>
@@ -175,6 +176,7 @@ function ScannerPage() {
           <DatePicker
             date={filters.endDate}
             onSelect={(d) => setFilters((f) => ({ ...f, endDate: d }))}
+            onClear={() => setFilters((f) => ({ ...f, endDate: '' }))}
             className="py-0.5 px-2 w-36 rounded-md border-border bg-surface"
           />
         </div>

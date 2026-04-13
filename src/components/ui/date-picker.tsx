@@ -14,10 +14,11 @@ interface DatePickerProps {
   id?: string
   date: string
   onSelect: (date: string) => void
+  onClear?: () => void
   className?: string
 }
 
-function DatePicker({ id, date, onSelect, className }: DatePickerProps) {
+function DatePicker({ id, date, onSelect, onClear, className }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
   const selectedDate = React.useMemo(() => {
@@ -35,22 +36,38 @@ function DatePicker({ id, date, onSelect, className }: DatePickerProps) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          id={id}
-          variant="outline"
-          data-empty={!date}
-          className={cn(
-            'justify-start text-left font-mono text-sm h-9',
-            'border-border bg-surface',
-            'hover:bg-accent hover:text-accent-foreground',
-            'data-[empty=true]:text-muted-foreground',
-            className,
-          )}
-        >
-          {date || <span>Pick a date</span>}
-        </Button>
-      </PopoverTrigger>
+      <div className="flex items-center gap-1">
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            variant="outline"
+            data-empty={!date}
+            className={cn(
+              'justify-start text-left font-mono text-sm h-9',
+              'border-border bg-surface',
+              'hover:bg-accent hover:text-accent-foreground',
+              'data-[empty=true]:text-muted-foreground',
+              className,
+            )}
+          >
+            {date || <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        {onClear && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onClear}
+            className={cn(
+              'text-fg-muted hover:text-fg shrink-0',
+              !date && 'invisible',
+            )}
+            aria-label="Clear date"
+          >
+            &times;
+          </Button>
+        )}
+      </div>
       <PopoverContent
         className="p-0 w-auto border-border bg-surface text-fg"
         align="start"
