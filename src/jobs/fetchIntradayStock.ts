@@ -2,7 +2,8 @@ import * as dotenv from 'dotenv'
 import { toDateString } from './dateUtil'
 import type { IntradayStocksTableRow } from '~/market-data/schema'
 import db from '~/market-data/db'
-import { intradayStocksTable } from '~/market-data/schema'
+import { dailyStocksTable, intradayStocksTable } from '~/market-data/schema'
+import { and, eq } from 'drizzle-orm'
 
 dotenv.config({ path: '.env.local' })
 
@@ -112,6 +113,16 @@ async function main() {
     date: targetDate,
     results: data.results,
   })
+
+  await db
+    .update(dailyStocksTable)
+    .set({ hasIntraday: true })
+    .where(
+      and(
+        eq(dailyStocksTable.date, toDateString(targetDate)),
+        eq(dailyStocksTable.symbol, symbol),
+      ),
+    )
 }
 
 main().catch((err) => {
