@@ -5,6 +5,7 @@ import { and, count, eq, gte, lte } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import db from '~/market-data/db'
 import { dailyStocksTable } from '~/market-data/schema'
+import { cn } from '~/lib/utils'
 import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { DatePicker } from '~/components/ui/date-picker'
@@ -185,63 +186,119 @@ function ScannerPage() {
           <label className="font-mono text-xs tracking-wider uppercase">
             Min Volume
           </label>
-          <Input
-            type="number"
-            value={filters.minVolume}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, minVolume: e.target.value }))
-            }
-            className="py-0.5 px-2 w-28 font-mono text-sm rounded-md border-border bg-surface"
-            placeholder="Any"
-          />
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              value={filters.minVolume}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, minVolume: e.target.value }))
+              }
+              className="py-0.5 px-2 w-28 font-mono text-sm rounded-md border-border bg-surface"
+              placeholder="Any"
+            />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilters((f) => ({ ...f, minVolume: '' }))}
+              className={cn(
+                'text-fg-muted hover:text-fg shrink-0',
+                !filters.minVolume && 'invisible',
+              )}
+              aria-label="Clear min volume"
+            >
+              &times;
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="font-mono text-xs tracking-wider uppercase">
             Min Open
           </label>
-          <Input
-            type="number"
-            step="0.01"
-            value={filters.minOpen}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, minOpen: e.target.value }))
-            }
-            className="py-0.5 px-2 w-24 font-mono text-sm rounded-md border-border bg-surface"
-            placeholder="Any"
-          />
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              step="0.01"
+              value={filters.minOpen}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, minOpen: e.target.value }))
+              }
+              className="py-0.5 px-2 w-24 font-mono text-sm rounded-md border-border bg-surface"
+              placeholder="Any"
+            />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilters((f) => ({ ...f, minOpen: '' }))}
+              className={cn(
+                'text-fg-muted hover:text-fg shrink-0',
+                !filters.minOpen && 'invisible',
+              )}
+              aria-label="Clear min open"
+            >
+              &times;
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="font-mono text-xs tracking-wider uppercase">
             Max Open
           </label>
-          <Input
-            type="number"
-            step="0.01"
-            value={filters.maxOpen}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, maxOpen: e.target.value }))
-            }
-            className="py-0.5 px-2 w-24 font-mono text-sm rounded-md border-border bg-surface"
-            placeholder="Any"
-          />
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              step="0.01"
+              value={filters.maxOpen}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, maxOpen: e.target.value }))
+              }
+              className="py-0.5 px-2 w-24 font-mono text-sm rounded-md border-border bg-surface"
+              placeholder="Any"
+            />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilters((f) => ({ ...f, maxOpen: '' }))}
+              className={cn(
+                'text-fg-muted hover:text-fg shrink-0',
+                !filters.maxOpen && 'invisible',
+              )}
+              aria-label="Clear max open"
+            >
+              &times;
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <label className="font-mono text-xs tracking-wider uppercase">
             Min Gap %
           </label>
-          <Input
-            type="number"
-            step="0.01"
-            value={filters.minGap}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, minGap: e.target.value }))
-            }
-            className="py-0.5 px-2 w-24 font-mono text-sm rounded-md border-border bg-surface"
-            placeholder="Any"
-          />
+          <div className="flex items-center gap-1">
+            <Input
+              type="number"
+              step="0.01"
+              value={filters.minGap}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, minGap: e.target.value }))
+              }
+              className="py-0.5 px-2 w-24 font-mono text-sm rounded-md border-border bg-surface"
+              placeholder="Any"
+            />
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setFilters((f) => ({ ...f, minGap: '' }))}
+              className={cn(
+                'text-fg-muted hover:text-fg shrink-0',
+                !filters.minGap && 'invisible',
+              )}
+              aria-label="Clear min gap"
+            >
+              &times;
+            </Button>
+          </div>
         </div>
 
         <Button onClick={handleScan} className="shrink-0">
