@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
-import { and, count, eq, gte, lte } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, gte, lte } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import db from '~/market-data/db'
 import { dailyStocksTable } from '~/market-data/schema'
@@ -12,6 +12,21 @@ import { DatePicker } from '~/components/ui/date-picker'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 
+const SORTABLE_COLUMNS = ['symbol', 'date', 'open', 'close', 'volume', 'gap', 'change'] as const
+type SortableColumn = (typeof SORTABLE_COLUMNS)[number]
+type SortDir = 'asc' | 'desc'
+
+const ALL_COLUMNS = getTableColumns(dailyStocksTable)
+const COLUMN_MAP = {
+  symbol: ALL_COLUMNS.symbol,
+  date: ALL_COLUMNS.date,
+  open: ALL_COLUMNS.open,
+  close: ALL_COLUMNS.close,
+  volume: ALL_COLUMNS.volume,
+  gap: ALL_COLUMNS.gap,
+  change: ALL_COLUMNS.change,
+} satisfies Record<SortableColumn, unknown>
+
 interface ScannerSearch {
   startDate?: string
   endDate?: string
@@ -21,6 +36,8 @@ interface ScannerSearch {
   minGap?: number
   page?: number
   pageSize?: number
+  sortBy?: SortableColumn
+  sortDir?: SortDir
 }
 
 interface ScannerInput extends ScannerSearch {
@@ -50,13 +67,21 @@ const scanStocks = createServerFn()
     const conditions = buildConditions(data)
     const where = and(...conditions)
 
+    let query = db
+      .select()
+      .from(dailyStocksTable)
+      .where(where)
+      .limit(data.pageSize)
+      .offset((data.page - 1) * data.pageSize)
+      .$dynamic()
+
+    if (data.sortBy) {
+      const col = COLUMN_MAP[data.sortBy]
+      query = query.orderBy(data.sortDir === 'desc' ? desc(col) : asc(col))
+    }
+
     const [rows, [{ total }]] = await Promise.all([
-      db
-        .select()
-        .from(dailyStocksTable)
-        .where(where)
-        .limit(data.pageSize)
-        .offset((data.page - 1) * data.pageSize),
+      query,
       db
         .select({ total: count() })
         .from(dailyStocksTable)
@@ -79,6 +104,13 @@ export const Route = createFileRoute('/scanner')({
     pageSize: PAGE_SIZE_OPTIONS.includes(Number(search.pageSize) as any)
       ? Number(search.pageSize)
       : undefined,
+    sortBy: SORTABLE_COLUMNS.includes(search.sortBy as SortableColumn)
+      ? (search.sortBy as SortableColumn)
+      : undefined,
+    sortDir:
+      search.sortDir === 'asc' || search.sortDir === 'desc'
+        ? search.sortDir
+        : undefined,
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ deps }) => {
@@ -102,6 +134,39 @@ function formatPercent(p: number | null): string {
   return `${(p * 100).toFixed(2)}%`
 }
 
+function SortableHeader({
+  col,
+  label,
+  align,
+  sortBy,
+  sortDir,
+  onSort,
+}: {
+  col: SortableColumn
+  label: string
+  align: 'left' | 'right'
+  sortBy?: SortableColumn
+  sortDir?: SortDir
+  onSort: (col: SortableColumn) => void
+}) {
+  const isActive = sortBy === col
+  const arrow = isActive ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : ''
+
+  return (
+    <th
+      className={cn(
+        'px-3 py-2 cursor-pointer select-none hover:text-primary',
+        align === 'left' ? 'text-left' : 'text-right',
+        isActive && 'text-primary',
+      )}
+      onClick={() => onSort(col)}
+    >
+      {label}
+      {arrow}
+    </th>
+  )
+}
+
 function ScannerPage() {
   const navigate = useNavigate({ from: '/scanner' })
   const search = Route.useSearch()
@@ -118,6 +183,8 @@ function ScannerPage() {
     minOpen: search.minOpen?.toString() ?? '',
     maxOpen: search.maxOpen?.toString() ?? '',
     minGap: search.minGap?.toString() ?? '',
+    sortBy: search.sortBy as SortableColumn | undefined,
+    sortDir: search.sortDir as SortDir | undefined,
   })
 
   const handleScan = () => {
@@ -129,6 +196,8 @@ function ScannerPage() {
         minOpen: Number(filters.minOpen) || undefined,
         maxOpen: Number(filters.maxOpen) || undefined,
         minGap: Number(filters.minGap) || undefined,
+        sortBy: filters.sortBy,
+        sortDir: filters.sortDir,
         page: 1,
         pageSize,
       },
@@ -142,6 +211,14 @@ function ScannerPage() {
         page: newPage,
       },
     })
+  }
+
+  const handleSort = (col: SortableColumn) => {
+    setFilters((f) => ({
+      ...f,
+      sortBy: col,
+      sortDir: f.sortBy === col && f.sortDir === 'asc' ? 'desc' : 'asc',
+    }))
   }
 
   const changePageSize = (newSize: number) => {
@@ -316,13 +393,13 @@ function ScannerPage() {
           <table className="w-full font-mono text-sm border-collapse">
             <thead>
               <tr className="border-b border-border bg-surface text-xs tracking-wider uppercase">
-                <th className="px-3 py-2 text-left">Symbol</th>
-                <th className="px-3 py-2 text-left">Date</th>
-                <th className="px-3 py-2 text-right">Open</th>
-                <th className="px-3 py-2 text-right">Close</th>
-                <th className="px-3 py-2 text-right">Volume</th>
-                <th className="px-3 py-2 text-right">Gap</th>
-                <th className="px-3 py-2 text-right">Change</th>
+                <SortableHeader col="symbol" label="Symbol" align="left" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader col="date" label="Date" align="left" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader col="open" label="Open" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader col="close" label="Close" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader col="volume" label="Volume" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader col="gap" label="Gap" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader col="change" label="Change" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
               </tr>
             </thead>
             <tbody>
