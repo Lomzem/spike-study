@@ -1,9 +1,9 @@
 import * as dotenv from 'dotenv'
+import { and, eq } from 'drizzle-orm'
 import { toDateString } from './dateUtil'
 import type { IntradayStocksTableRow } from '~/market-data/schema'
 import db from '~/market-data/db'
 import { dailyStocksTable, intradayStocksTable } from '~/market-data/schema'
-import { and, eq } from 'drizzle-orm'
 
 dotenv.config({ path: '.env.local' })
 
@@ -63,7 +63,7 @@ async function fetchIntradayStock(symbol: string, date: Date) {
   return data
 }
 
-async function insertIntradayStock({
+function mapIntradayResults({
   symbol,
   date,
   results,
@@ -71,8 +71,8 @@ async function insertIntradayStock({
   symbol: string
   date: Date
   results: Array<MassiveIntradayResult>
-}) {
-  const renamedResults: Array<IntradayStocksTableRow> = results.map((r) => ({
+}): Array<IntradayStocksTableRow> {
+  return results.map((r) => ({
     symbol,
     date: toDateString(date),
     open: r.o,
@@ -82,13 +82,6 @@ async function insertIntradayStock({
     volume: r.v,
     time: r.t,
   }))
-
-  const result = await db
-    .insert(intradayStocksTable)
-    .values(renamedResults)
-    .onConflictDoNothing()
-
-  console.log(result)
 }
 
 async function main() {
@@ -108,21 +101,28 @@ async function main() {
     return
   }
 
-  await insertIntradayStock({
+  const intradayRows = mapIntradayResults({
     symbol,
     date: targetDate,
     results: data.results,
   })
 
-  await db
-    .update(dailyStocksTable)
-    .set({ hasIntraday: true })
-    .where(
-      and(
-        eq(dailyStocksTable.date, toDateString(targetDate)),
-        eq(dailyStocksTable.symbol, symbol),
-      ),
-    )
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(intradayStocksTable)
+      .values(intradayRows)
+      .onConflictDoNothing()
+
+    await tx
+      .update(dailyStocksTable)
+      .set({ hasIntraday: true })
+      .where(
+        and(
+          eq(dailyStocksTable.date, toDateString(targetDate)),
+          eq(dailyStocksTable.symbol, symbol),
+        ),
+      )
+  })
 }
 
 main().catch((err) => {

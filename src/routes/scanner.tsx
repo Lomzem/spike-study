@@ -1,7 +1,16 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { useState } from 'react'
-import { and, asc, count, desc, eq, getTableColumns, gte, lte } from 'drizzle-orm'
+import { useEffect, useState } from 'react'
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  gte,
+  lte,
+} from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import db from '~/market-data/db'
 import { dailyStocksTable } from '~/market-data/schema'
@@ -12,7 +21,15 @@ import { DatePicker } from '~/components/ui/date-picker'
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 
-const SORTABLE_COLUMNS = ['symbol', 'date', 'open', 'close', 'volume', 'gap', 'change'] as const
+const SORTABLE_COLUMNS = [
+  'symbol',
+  'date',
+  'open',
+  'close',
+  'volume',
+  'gap',
+  'change',
+] as const
 type SortableColumn = (typeof SORTABLE_COLUMNS)[number]
 type SortDir = 'asc' | 'desc'
 
@@ -45,8 +62,19 @@ interface ScannerInput extends ScannerSearch {
   pageSize: number
 }
 
-function buildConditions(data: ScannerSearch): SQL[] {
-  const conditions: SQL[] = [eq(dailyStocksTable.hasIntraday, true)]
+function toFiniteNumber(value: unknown): number | undefined {
+  if (value === '' || value == null) return undefined
+  const n = Number(value)
+  return Number.isFinite(n) ? n : undefined
+}
+
+function toPositiveInteger(value: unknown): number | undefined {
+  const n = toFiniteNumber(value)
+  return n != null && Number.isInteger(n) && n >= 1 ? n : undefined
+}
+
+function buildConditions(data: ScannerSearch): Array<SQL> {
+  const conditions: Array<SQL> = [eq(dailyStocksTable.hasIntraday, true)]
   if (data.startDate)
     conditions.push(gte(dailyStocksTable.date, data.startDate))
   if (data.endDate) conditions.push(lte(dailyStocksTable.date, data.endDate))
@@ -64,6 +92,12 @@ function buildConditions(data: ScannerSearch): SQL[] {
 const scanStocks = createServerFn()
   .inputValidator((data: ScannerInput) => data)
   .handler(async ({ data }) => {
+    const page = Number.isInteger(data.page) && data.page >= 1 ? data.page : 1
+    const pageSize = PAGE_SIZE_OPTIONS.includes(
+      data.pageSize as (typeof PAGE_SIZE_OPTIONS)[number],
+    )
+      ? data.pageSize
+      : 25
     const conditions = buildConditions(data)
     const where = and(...conditions)
 
@@ -71,8 +105,8 @@ const scanStocks = createServerFn()
       .select()
       .from(dailyStocksTable)
       .where(where)
-      .limit(data.pageSize)
-      .offset((data.page - 1) * data.pageSize)
+      .limit(pageSize)
+      .offset((page - 1) * pageSize)
       .$dynamic()
 
     if (data.sortBy) {
@@ -82,10 +116,7 @@ const scanStocks = createServerFn()
 
     const [rows, [{ total }]] = await Promise.all([
       query,
-      db
-        .select({ total: count() })
-        .from(dailyStocksTable)
-        .where(where),
+      db.select({ total: count() }).from(dailyStocksTable).where(where),
     ])
 
     return { rows, totalCount: total }
@@ -96,13 +127,15 @@ export const Route = createFileRoute('/scanner')({
     startDate:
       typeof search.startDate === 'string' ? search.startDate : undefined,
     endDate: typeof search.endDate === 'string' ? search.endDate : undefined,
-    minVolume: Number(search.minVolume) || undefined,
-    minOpen: Number(search.minOpen) || undefined,
-    maxOpen: Number(search.maxOpen) || undefined,
-    minGap: Number(search.minGap) || undefined,
-    page: Number(search.page) || undefined,
-    pageSize: PAGE_SIZE_OPTIONS.includes(Number(search.pageSize) as any)
-      ? Number(search.pageSize)
+    minVolume: toFiniteNumber(search.minVolume),
+    minOpen: toFiniteNumber(search.minOpen),
+    maxOpen: toFiniteNumber(search.maxOpen),
+    minGap: toFiniteNumber(search.minGap),
+    page: toPositiveInteger(search.page),
+    pageSize: PAGE_SIZE_OPTIONS.includes(
+      toPositiveInteger(search.pageSize) as (typeof PAGE_SIZE_OPTIONS)[number],
+    )
+      ? toPositiveInteger(search.pageSize)
       : undefined,
     sortBy: SORTABLE_COLUMNS.includes(search.sortBy as SortableColumn)
       ? (search.sortBy as SortableColumn)
@@ -151,18 +184,32 @@ function SortableHeader({
 }) {
   const isActive = sortBy === col
   const arrow = isActive ? (sortDir === 'asc' ? ' \u25B2' : ' \u25BC') : ''
+  const ariaSort = isActive
+    ? sortDir === 'asc'
+      ? 'ascending'
+      : 'descending'
+    : 'none'
 
   return (
     <th
+      aria-sort={ariaSort}
       className={cn(
-        'px-3 py-2 cursor-pointer select-none hover:text-primary',
+        'px-3 py-2',
         align === 'left' ? 'text-left' : 'text-right',
         isActive && 'text-primary',
       )}
-      onClick={() => onSort(col)}
     >
-      {label}
-      {arrow}
+      <button
+        type="button"
+        className={cn(
+          'cursor-pointer select-none hover:text-primary w-full',
+          align === 'left' ? 'text-left' : 'text-right',
+        )}
+        onClick={() => onSort(col)}
+      >
+        {label}
+        {arrow}
+      </button>
     </th>
   )
 }
@@ -183,21 +230,37 @@ function ScannerPage() {
     minOpen: search.minOpen?.toString() ?? '',
     maxOpen: search.maxOpen?.toString() ?? '',
     minGap: search.minGap?.toString() ?? '',
-    sortBy: search.sortBy as SortableColumn | undefined,
-    sortDir: search.sortDir as SortDir | undefined,
   })
+
+  useEffect(() => {
+    setFilters({
+      startDate: search.startDate ?? '',
+      endDate: search.endDate ?? '',
+      minVolume: search.minVolume?.toString() ?? '',
+      minOpen: search.minOpen?.toString() ?? '',
+      maxOpen: search.maxOpen?.toString() ?? '',
+      minGap: search.minGap?.toString() ?? '',
+    })
+  }, [
+    search.endDate,
+    search.maxOpen,
+    search.minGap,
+    search.minOpen,
+    search.minVolume,
+    search.startDate,
+  ])
 
   const handleScan = () => {
     navigate({
       search: {
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
-        minVolume: Number(filters.minVolume) || undefined,
-        minOpen: Number(filters.minOpen) || undefined,
-        maxOpen: Number(filters.maxOpen) || undefined,
-        minGap: Number(filters.minGap) || undefined,
-        sortBy: filters.sortBy,
-        sortDir: filters.sortDir,
+        minVolume: toFiniteNumber(filters.minVolume),
+        minOpen: toFiniteNumber(filters.minOpen),
+        maxOpen: toFiniteNumber(filters.maxOpen),
+        minGap: toFiniteNumber(filters.minGap),
+        sortBy: search.sortBy,
+        sortDir: search.sortDir,
         page: 1,
         pageSize,
       },
@@ -214,11 +277,16 @@ function ScannerPage() {
   }
 
   const handleSort = (col: SortableColumn) => {
-    setFilters((f) => ({
-      ...f,
-      sortBy: col,
-      sortDir: f.sortBy === col && f.sortDir === 'asc' ? 'desc' : 'asc',
-    }))
+    const nextDir =
+      search.sortBy === col && search.sortDir === 'asc' ? 'desc' : 'asc'
+    navigate({
+      search: {
+        ...search,
+        sortBy: col,
+        sortDir: nextDir,
+        page: 1,
+      },
+    })
   }
 
   const changePageSize = (newSize: number) => {
@@ -236,10 +304,14 @@ function ScannerPage() {
       {/* Filter Bar */}
       <section className="flex flex-wrap gap-4 items-end py-2 px-4 border-b shrink-0 bg-bg border-border">
         <div className="flex flex-col gap-1">
-          <label className="font-mono text-xs tracking-wider uppercase">
+          <label
+            htmlFor="scanner-start-date"
+            className="font-mono text-xs tracking-wider uppercase"
+          >
             Start Date
           </label>
           <DatePicker
+            id="scanner-start-date"
             date={filters.startDate}
             onSelect={(d) => setFilters((f) => ({ ...f, startDate: d }))}
             onClear={() => setFilters((f) => ({ ...f, startDate: '' }))}
@@ -248,10 +320,14 @@ function ScannerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="font-mono text-xs tracking-wider uppercase">
+          <label
+            htmlFor="scanner-end-date"
+            className="font-mono text-xs tracking-wider uppercase"
+          >
             End Date
           </label>
           <DatePicker
+            id="scanner-end-date"
             date={filters.endDate}
             onSelect={(d) => setFilters((f) => ({ ...f, endDate: d }))}
             onClear={() => setFilters((f) => ({ ...f, endDate: '' }))}
@@ -260,11 +336,15 @@ function ScannerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="font-mono text-xs tracking-wider uppercase">
+          <label
+            htmlFor="scanner-min-volume"
+            className="font-mono text-xs tracking-wider uppercase"
+          >
             Min Volume
           </label>
           <div className="flex items-center gap-1">
             <Input
+              id="scanner-min-volume"
               type="number"
               value={filters.minVolume}
               onChange={(e) =>
@@ -289,11 +369,15 @@ function ScannerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="font-mono text-xs tracking-wider uppercase">
+          <label
+            htmlFor="scanner-min-open"
+            className="font-mono text-xs tracking-wider uppercase"
+          >
             Min Open
           </label>
           <div className="flex items-center gap-1">
             <Input
+              id="scanner-min-open"
               type="number"
               step="0.01"
               value={filters.minOpen}
@@ -319,11 +403,15 @@ function ScannerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="font-mono text-xs tracking-wider uppercase">
+          <label
+            htmlFor="scanner-max-open"
+            className="font-mono text-xs tracking-wider uppercase"
+          >
             Max Open
           </label>
           <div className="flex items-center gap-1">
             <Input
+              id="scanner-max-open"
               type="number"
               step="0.01"
               value={filters.maxOpen}
@@ -349,11 +437,15 @@ function ScannerPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="font-mono text-xs tracking-wider uppercase">
+          <label
+            htmlFor="scanner-min-gap"
+            className="font-mono text-xs tracking-wider uppercase"
+          >
             Min Gap %
           </label>
           <div className="flex items-center gap-1">
             <Input
+              id="scanner-min-gap"
               type="number"
               step="0.01"
               value={filters.minGap}
@@ -387,19 +479,72 @@ function ScannerPage() {
       <div className="flex-1 min-h-0 overflow-auto">
         {rows.length === 0 ? (
           <div className="flex justify-center items-center h-full font-mono text-sm text-fg-muted">
-            {totalCount === 0 ? 'No results found' : 'Enter filters and click Scan'}
+            {totalCount === 0
+              ? 'No results found'
+              : page > totalPages
+                ? 'No results on this page'
+                : 'Enter filters and click Scan'}
           </div>
         ) : (
           <table className="w-full font-mono text-sm border-collapse">
             <thead>
               <tr className="border-b border-border bg-surface text-xs tracking-wider uppercase">
-                <SortableHeader col="symbol" label="Symbol" align="left" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
-                <SortableHeader col="date" label="Date" align="left" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
-                <SortableHeader col="open" label="Open" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
-                <SortableHeader col="close" label="Close" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
-                <SortableHeader col="volume" label="Volume" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
-                <SortableHeader col="gap" label="Gap" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
-                <SortableHeader col="change" label="Change" align="right" sortBy={filters.sortBy} sortDir={filters.sortDir} onSort={handleSort} />
+                <SortableHeader
+                  col="symbol"
+                  label="Symbol"
+                  align="left"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  col="date"
+                  label="Date"
+                  align="left"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  col="open"
+                  label="Open"
+                  align="right"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  col="close"
+                  label="Close"
+                  align="right"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  col="volume"
+                  label="Volume"
+                  align="right"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  col="gap"
+                  label="Gap"
+                  align="right"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
+                <SortableHeader
+                  col="change"
+                  label="Change"
+                  align="right"
+                  sortBy={search.sortBy}
+                  sortDir={search.sortDir}
+                  onSort={handleSort}
+                />
               </tr>
             </thead>
             <tbody>
