@@ -91,6 +91,7 @@ async function insertDailyStocks({
     gap: null,
     range: r.l !== 0 ? r.h / r.l - 1 : 0,
     change: r.o !== 0 ? r.c / r.o - 1 : 0,
+    hasIntraday: false,
   }))
 
   // Insert in chunks to avoid stack overflow

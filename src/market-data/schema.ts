@@ -21,6 +21,7 @@ export const dailyStocksTable = sqliteTable(
     gap: real(),
     range: real().notNull(),
     change: real().notNull(),
+    hasIntraday: integer({ mode: 'boolean' }).notNull().default(false),
   },
   (table) => [
     primaryKey({
