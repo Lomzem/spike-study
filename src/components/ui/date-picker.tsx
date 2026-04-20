@@ -18,7 +18,13 @@ interface DatePickerProps {
   className?: string
 }
 
-function DatePicker({ id, date, onSelect, onClear, className }: DatePickerProps) {
+function DatePicker({
+  id,
+  date,
+  onSelect,
+  onClear,
+  className,
+}: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
 
   const selectedDate = React.useMemo(() => {
