@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
+import { and, asc, eq, getTableColumns } from 'drizzle-orm'
 import { useMemo, useRef } from 'react'
-import { and, eq, getTableColumns } from 'drizzle-orm'
 import type { UTCTimestamp } from 'lightweight-charts'
+import type { IntradayCandleData } from '~/lib/indicators'
 import useChart from '~/hooks/useChart'
 import db from '~/market-data/db'
 import { intradayStocksTable } from '~/market-data/schema'
+import { useChartIndicators } from '~/routes/-chart-indicators'
 
 const getIntradayData = createServerFn()
   .inputValidator((data: { symbol: string; date: string }) => data)
@@ -21,6 +23,7 @@ const getIntradayData = createServerFn()
           eq(intradayStocksTable.symbol, symbol),
         ),
       )
+      .orderBy(asc(intradayStocksTable.time))
   })
 
 export const Route = createFileRoute('/chart/$symbol/$date')({
@@ -38,6 +41,7 @@ export const Route = createFileRoute('/chart/$symbol/$date')({
 
 function RouteComponent() {
   const chartContainerRef = useRef<HTMLDivElement>(null)
+  const { showSma, showEma, showVwap } = useChartIndicators()
   const { symbol, date } = Route.useParams()
   const { intradayData } = Route.useLoaderData()
   const candleData = useMemo(
@@ -45,13 +49,18 @@ function RouteComponent() {
       intradayData.map((d) => ({
         ...d,
         time: d.time as UTCTimestamp,
-      })),
+      })) as Array<IntradayCandleData>,
     [intradayData],
   )
 
   useChart({
     candleData,
     containerRef: chartContainerRef,
+    indicators: {
+      showSma,
+      showEma,
+      showVwap,
+    },
     symbol,
   })
 
