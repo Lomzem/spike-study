@@ -2,7 +2,11 @@ import { CandlestickSeries, LineSeries, createChart } from 'lightweight-charts'
 import { useMutation, useQuery } from 'convex/react'
 import { useCallback, useEffect, useRef } from 'react'
 import { api } from '../../convex/_generated/api'
-import type { IChartApi, ISeriesApi } from 'lightweight-charts'
+import type {
+  IChartApi,
+  ISeriesApi,
+  SeriesOptionsMap,
+} from 'lightweight-charts'
 import type { IntradayCandleData } from '~/lib/indicators'
 import type { SavedLineStyle, SavedPriceLine } from '~/plugins/UserPriceLines'
 import { UserPriceLines } from '~/plugins/UserPriceLines'
@@ -33,6 +37,18 @@ function normalizeSavedPriceLines(
   )
 }
 
+function removeSeries<T extends keyof SeriesOptionsMap>(
+  chart: IChartApi,
+  seriesRef: React.MutableRefObject<ISeriesApi<T> | null>,
+) {
+  if (!seriesRef.current) {
+    return
+  }
+
+  chart.removeSeries(seriesRef.current)
+  seriesRef.current = null
+}
+
 export default function useChart({
   candleData,
   containerRef,
@@ -49,7 +65,10 @@ export default function useChart({
   symbol: string
 }) {
   const chartRef = useRef<IChartApi | null>(null)
-  const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const smaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const emaSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
+  const vwapSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const userPriceLinesRef = useRef<UserPriceLines | null>(null)
   const saveTimeoutRef = useRef<number | null>(null)
   const pendingPriceLinesRef = useRef<Array<SavedPriceLine> | null>(null)
@@ -166,43 +185,7 @@ export default function useChart({
     })
     chartRef.current = chart
 
-    const candlestickSeries = chart.addSeries(CandlestickSeries)
-    candlestickSeries.setData(candleData)
-    seriesRef.current = candlestickSeries
-
-    if (indicators.showSma) {
-      const smaSeries = chart.addSeries(LineSeries, {
-        color: '#f59e0b',
-        lineWidth: 2,
-        lastValueVisible: false,
-        priceLineVisible: false,
-      })
-      smaSeries.setData(calculateSma(candleData, 9))
-      smaSeries.setSeriesOrder(1)
-    }
-
-    if (indicators.showEma) {
-      const emaSeries = chart.addSeries(LineSeries, {
-        color: '#60a5fa',
-        lineWidth: 2,
-        lastValueVisible: false,
-        priceLineVisible: false,
-      })
-      emaSeries.setData(calculateEma(candleData, 9))
-      emaSeries.setSeriesOrder(2)
-    }
-
-    if (indicators.showVwap) {
-      const vwapSeries = chart.addSeries(LineSeries, {
-        color: '#c084fc',
-        lineWidth: 2,
-        lineStyle: 2,
-        lastValueVisible: false,
-        priceLineVisible: false,
-      })
-      vwapSeries.setData(calculateSessionVwap(candleData))
-      vwapSeries.setSeriesOrder(3)
-    }
+    candlestickSeriesRef.current = chart.addSeries(CandlestickSeries)
 
     return () => {
       if (userPriceLinesRef.current) {
@@ -213,16 +196,84 @@ export default function useChart({
       observer.disconnect()
       chart.remove()
       chartRef.current = null
-      seriesRef.current = null
+      candlestickSeriesRef.current = null
+      smaSeriesRef.current = null
+      emaSeriesRef.current = null
+      vwapSeriesRef.current = null
       pendingPriceLinesRef.current = null
       hydratedDrawingKeyRef.current = null
     }
-  }, [candleData, containerRef, flushPendingSave, indicators])
+  }, [containerRef, flushPendingSave])
+
+  useEffect(() => {
+    if (!candlestickSeriesRef.current) {
+      return
+    }
+
+    candlestickSeriesRef.current.setData(candleData)
+  }, [candleData])
+
+  useEffect(() => {
+    if (!chartRef.current) {
+      return
+    }
+
+    const chart = chartRef.current
+
+    if (indicators.showSma) {
+      if (!smaSeriesRef.current) {
+        smaSeriesRef.current = chart.addSeries(LineSeries, {
+          color: '#f59e0b',
+          lineWidth: 2,
+          lastValueVisible: false,
+          priceLineVisible: false,
+        })
+        smaSeriesRef.current.setSeriesOrder(1)
+      }
+
+      smaSeriesRef.current.setData(calculateSma(candleData, 9))
+    } else {
+      removeSeries(chart, smaSeriesRef)
+    }
+
+    if (indicators.showEma) {
+      if (!emaSeriesRef.current) {
+        emaSeriesRef.current = chart.addSeries(LineSeries, {
+          color: '#60a5fa',
+          lineWidth: 2,
+          lastValueVisible: false,
+          priceLineVisible: false,
+        })
+        emaSeriesRef.current.setSeriesOrder(2)
+      }
+
+      emaSeriesRef.current.setData(calculateEma(candleData, 9))
+    } else {
+      removeSeries(chart, emaSeriesRef)
+    }
+
+    if (indicators.showVwap) {
+      if (!vwapSeriesRef.current) {
+        vwapSeriesRef.current = chart.addSeries(LineSeries, {
+          color: '#c084fc',
+          lineWidth: 2,
+          lineStyle: 2,
+          lastValueVisible: false,
+          priceLineVisible: false,
+        })
+        vwapSeriesRef.current.setSeriesOrder(3)
+      }
+
+      vwapSeriesRef.current.setData(calculateSessionVwap(candleData))
+    } else {
+      removeSeries(chart, vwapSeriesRef)
+    }
+  }, [candleData, indicators])
 
   useEffect(() => {
     if (
       !chartRef.current ||
-      !seriesRef.current ||
+      !candlestickSeriesRef.current ||
       savedPriceLines === undefined
     ) {
       return
@@ -236,7 +287,7 @@ export default function useChart({
     if (!userPriceLinesRef.current) {
       userPriceLinesRef.current = new UserPriceLines(
         chartRef.current,
-        seriesRef.current,
+        candlestickSeriesRef.current,
         {
           color: '#4C9AFF',
           onChange: scheduleSave,
@@ -250,5 +301,5 @@ export default function useChart({
     hydratedDrawingKeyRef.current = drawingKey
   }, [normalizedSymbol, savedPriceLines, scheduleSave])
 
-  return { chart: chartRef, series: seriesRef }
+  return { chart: chartRef, series: candlestickSeriesRef }
 }
