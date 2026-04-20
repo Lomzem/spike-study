@@ -1,12 +1,13 @@
 import { CandlestickSeries, LineSeries, createChart } from 'lightweight-charts'
 import { useMutation, useQuery } from 'convex/react'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { api } from '../../convex/_generated/api'
 import type {
   IChartApi,
   ISeriesApi,
   SeriesOptionsMap,
 } from 'lightweight-charts'
+import type { MutableRefObject, RefObject } from 'react'
 import type { IntradayCandleData } from '~/lib/indicators'
 import type { SavedLineStyle, SavedPriceLine } from '~/plugins/UserPriceLines'
 import { UserPriceLines } from '~/plugins/UserPriceLines'
@@ -39,7 +40,7 @@ function normalizeSavedPriceLines(
 
 function removeSeries<T extends keyof SeriesOptionsMap>(
   chart: IChartApi,
-  seriesRef: React.MutableRefObject<ISeriesApi<T> | null>,
+  seriesRef: MutableRefObject<ISeriesApi<T> | null>,
 ) {
   if (!seriesRef.current) {
     return
@@ -52,16 +53,16 @@ function removeSeries<T extends keyof SeriesOptionsMap>(
 export default function useChart({
   candleData,
   containerRef,
-  indicators,
+  showEma,
+  showSma,
+  showVwap,
   symbol,
 }: {
-  containerRef: React.RefObject<HTMLDivElement | null>
+  containerRef: RefObject<HTMLDivElement | null>
   candleData: Array<IntradayCandleData>
-  indicators: {
-    showSma: boolean
-    showEma: boolean
-    showVwap: boolean
-  }
+  showEma: boolean
+  showSma: boolean
+  showVwap: boolean
   symbol: string
 }) {
   const chartRef = useRef<IChartApi | null>(null)
@@ -83,6 +84,9 @@ export default function useChart({
   const bgColor = '#0f1117'
   const gridColor = 'rgba(255, 255, 255, 0.03)'
   const crosshairColor = 'rgba(255, 255, 255, 0.03)'
+  const smaData = useMemo(() => calculateSma(candleData, 9), [candleData])
+  const emaData = useMemo(() => calculateEma(candleData, 9), [candleData])
+  const vwapData = useMemo(() => calculateSessionVwap(candleData), [candleData])
 
   const scheduleSave = useCallback(
     (priceLines: Array<SavedPriceLine>) => {
@@ -220,7 +224,7 @@ export default function useChart({
 
     const chart = chartRef.current
 
-    if (indicators.showSma) {
+    if (showSma) {
       if (!smaSeriesRef.current) {
         smaSeriesRef.current = chart.addSeries(LineSeries, {
           color: '#f59e0b',
@@ -231,12 +235,12 @@ export default function useChart({
         smaSeriesRef.current.setSeriesOrder(1)
       }
 
-      smaSeriesRef.current.setData(calculateSma(candleData, 9))
+      smaSeriesRef.current.setData(smaData)
     } else {
       removeSeries(chart, smaSeriesRef)
     }
 
-    if (indicators.showEma) {
+    if (showEma) {
       if (!emaSeriesRef.current) {
         emaSeriesRef.current = chart.addSeries(LineSeries, {
           color: '#60a5fa',
@@ -247,12 +251,12 @@ export default function useChart({
         emaSeriesRef.current.setSeriesOrder(2)
       }
 
-      emaSeriesRef.current.setData(calculateEma(candleData, 9))
+      emaSeriesRef.current.setData(emaData)
     } else {
       removeSeries(chart, emaSeriesRef)
     }
 
-    if (indicators.showVwap) {
+    if (showVwap) {
       if (!vwapSeriesRef.current) {
         vwapSeriesRef.current = chart.addSeries(LineSeries, {
           color: '#c084fc',
@@ -264,11 +268,11 @@ export default function useChart({
         vwapSeriesRef.current.setSeriesOrder(3)
       }
 
-      vwapSeriesRef.current.setData(calculateSessionVwap(candleData))
+      vwapSeriesRef.current.setData(vwapData)
     } else {
       removeSeries(chart, vwapSeriesRef)
     }
-  }, [candleData, indicators])
+  }, [emaData, showEma, showSma, showVwap, smaData, vwapData])
 
   useEffect(() => {
     if (

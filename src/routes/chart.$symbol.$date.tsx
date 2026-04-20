@@ -56,11 +56,9 @@ function RouteComponent() {
   useChart({
     candleData,
     containerRef: chartContainerRef,
-    indicators: {
-      showSma,
-      showEma,
-      showVwap,
-    },
+    showEma,
+    showSma,
+    showVwap,
     symbol,
   })
 
