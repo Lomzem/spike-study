@@ -23,10 +23,6 @@ export const load: PageServerLoad = async ({ url }) => {
     dbError: undefined,
   }
 
-  if (!queryState.hasScanned) {
-    return shared
-  }
-
   let db: ReturnType<typeof getDb>
 
   try {
@@ -39,6 +35,10 @@ export const load: PageServerLoad = async ({ url }) => {
           ? error.message
           : 'Database configuration is missing.',
     }
+  }
+
+  if (!queryState.hasScanned) {
+    return shared
   }
 
   const whereClause = and(...buildScannerConditions(queryState.filters))

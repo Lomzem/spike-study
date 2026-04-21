@@ -101,6 +101,6 @@
       <ScannerEmptyState hasScanned={data.hasScanned} />
     {/if}
 
-    <div class="h-px w-full shrink-0 bg-gradient-to-r from-transparent via-primary/70 to-transparent"></div>
+    <div class="h-px w-full shrink-0 bg-linear-to-r from-transparent via-primary/70 to-transparent"></div>
   </section>
 </main>
