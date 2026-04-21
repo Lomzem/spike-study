@@ -1,7 +1,9 @@
 .nitro/
 .output/
+.svelte-kit/
 .prettierrc
 .tanstack/
+build/
 **/api
 **/build
 **/public

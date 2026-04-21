@@ -1,4 +1,7 @@
-import db from '~/market-data/db'
+import * as dotenv from 'dotenv'
+import { getScriptDbClient } from '../lib/server/db/script-client.js'
+
+dotenv.config({ path: '.env.local' })
 
 /**
  * Backfills the `gap` column in daily stock records using the most recent prior close.
@@ -10,7 +13,7 @@ import db from '~/market-data/db'
  */
 async function main() {
   try {
-    const result = await db.run(`
+    const result = await getScriptDbClient().execute(`
     UPDATE daily_stocks_table AS current
     SET gap = (
       SELECT (current.open / previous.close - 1)
@@ -25,7 +28,7 @@ async function main() {
     WHERE gap IS NULL
     AND current.open IS NOT NULL;
   `)
-    console.log(`Backfill complete. Rows affected: ${result.rowsAffected}`)
+    console.log(`Backfill complete. Rows affected: ${result.rowsAffected ?? 0}`)
   } catch (err) {
     console.error('Failed to backfill gaps:', err)
     process.exit(1)

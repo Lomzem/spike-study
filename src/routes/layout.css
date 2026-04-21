@@ -1,0 +1,65 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Rubik', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+:root {
+  --background: #1a1610;
+  --foreground: #e8dcc8;
+  --muted: #241f17;
+  --muted-foreground: #8b7e6a;
+  --border: rgba(139, 126, 106, 0.15);
+  --input: #2a2318;
+  --primary: #c4a46a;
+  --primary-foreground: #1a1610;
+  --card: #201b14;
+  --card-foreground: #e8dcc8;
+  --accent: #2a2318;
+  --accent-foreground: #e8dcc8;
+  --ring: #c4a46a;
+  --destructive: #c4783a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    background-image:
+      radial-gradient(
+        circle at top left,
+        rgba(196, 164, 106, 0.08),
+        transparent 24%
+      ),
+      linear-gradient(180deg, #1a1610 0%, #17130e 100%);
+  }
+
+  a {
+    @apply outline-none;
+  }
+}

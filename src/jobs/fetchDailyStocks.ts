@@ -1,10 +1,12 @@
 import * as dotenv from 'dotenv'
 import { toDateString } from './dateUtil'
-import type { DailyStocksTableRow } from '~/market-data/schema'
-import db from '~/market-data/db'
-import { dailyStocksTable } from '~/market-data/schema'
+import type { DailyStocksRow } from '../lib/server/db/schema.js'
+import { getScriptDb } from '../lib/server/db/script-client.js'
+import { dailyStocksTable } from '../lib/server/db/schema.js'
 
 dotenv.config({ path: '.env.local' })
+
+const db = getScriptDb()
 
 const MASSIVE_API_KEY = process.env.MASSIVE_API_KEY
 if (!MASSIVE_API_KEY) {
@@ -79,7 +81,7 @@ async function insertDailyStocks({
   date: Date
   results: Array<MassiveDailyMarketSummaryResult>
 }) {
-  const rowsWithCalculations: Array<DailyStocksTableRow> = results.map((r) => ({
+  const rowsWithCalculations: Array<DailyStocksRow> = results.map((r) => ({
     date: toDateString(date),
     symbol: r.T,
     open: r.o,
