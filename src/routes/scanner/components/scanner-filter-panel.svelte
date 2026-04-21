@@ -28,9 +28,9 @@
   } = $props()
 
   let mobileOpen = $state(false)
-  let selectedSortBy = $state('')
-  let selectedSortDir = $state('')
-  let selectedPageSize = $state('')
+  let selectedSortBy = $derived(sortBy ?? '')
+  let selectedSortDir = $derived(sortDir ?? '')
+  let selectedPageSize = $derived(String(pageSize))
 
   const sortByOptions = [
     { value: '', label: 'Default' },
@@ -50,12 +50,6 @@
       label: String(option),
     })),
   )
-
-  $effect(() => {
-    selectedSortBy = sortBy ?? ''
-    selectedSortDir = sortDir ?? ''
-    selectedPageSize = String(pageSize)
-  })
 </script>
 
 {#snippet filterFields()}
@@ -75,25 +69,64 @@
     </div>
 
     <label class="grid gap-1.5">
-      <span class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Min volume</span>
-      <Input name="minVolume" type="number" inputmode="numeric" placeholder="Any" value={filters.minVolume} />
+      <span
+        class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+        >Min volume</span
+      >
+      <Input
+        name="minVolume"
+        type="number"
+        inputmode="numeric"
+        placeholder="Any"
+        value={filters.minVolume}
+      />
     </label>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
       <label class="grid gap-1.5">
-        <span class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Min open</span>
-        <Input name="minOpen" type="number" step="0.01" inputmode="decimal" placeholder="Any" value={filters.minOpen} />
+        <span
+          class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          >Min open</span
+        >
+        <Input
+          name="minOpen"
+          type="number"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="Any"
+          value={filters.minOpen}
+        />
       </label>
 
       <label class="grid gap-1.5">
-        <span class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Max open</span>
-        <Input name="maxOpen" type="number" step="0.01" inputmode="decimal" placeholder="Any" value={filters.maxOpen} />
+        <span
+          class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+          >Max open</span
+        >
+        <Input
+          name="maxOpen"
+          type="number"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="Any"
+          value={filters.maxOpen}
+        />
       </label>
     </div>
 
     <label class="grid gap-1.5">
-      <span class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Min gap %</span>
-      <Input name="minGap" type="number" step="0.1" inputmode="decimal" placeholder="Any" value={filters.minGap} />
+      <span
+        class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+        >Min gap %</span
+      >
+      <Input
+        name="minGap"
+        type="number"
+        step="0.1"
+        inputmode="decimal"
+        placeholder="Any"
+        value={filters.minGap}
+      />
     </label>
 
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
@@ -125,18 +158,28 @@
 
 {#snippet filterForm()}
   <form method="GET" class="flex h-full min-h-0 flex-col gap-5">
-    <div class="min-h-0 flex-1 overflow-auto pr-1">{@render filterFields()}</div>
+    <div class="min-h-0 flex-1 overflow-auto pr-1">
+      {@render filterFields()}
+    </div>
 
     <div class="grid gap-2 border-t border-border/70 pt-4">
       <Button type="submit" class="w-full">Run scan</Button>
-      <Button href="/scanner" variant="ghost" class="w-full">Reset filters</Button>
+      <Button href="/scanner" variant="ghost" class="w-full"
+        >Reset filters</Button
+      >
     </div>
   </form>
 {/snippet}
 
-<div class="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3 lg:hidden">
+<div
+  class="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-3 lg:hidden"
+>
   <div>
-    <p class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Scanner</p>
+    <p
+      class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+    >
+      Scanner
+    </p>
     <p class="text-sm text-foreground">Filters and results</p>
   </div>
 
@@ -146,7 +189,10 @@
     >
       <SlidersHorizontal size={16} />
     </Sheet.Trigger>
-    <Sheet.Content side="left" class="flex w-[22rem] max-w-[88vw] flex-col gap-4 border-border bg-card px-0">
+    <Sheet.Content
+      side="left"
+      class="flex w-[22rem] max-w-[88vw] flex-col gap-4 border-border bg-card px-0"
+    >
       <Sheet.Header class="px-5">
         <Sheet.Title>Scanner Filters</Sheet.Title>
         <Sheet.Description>Adjust the scan, then rerun it.</Sheet.Description>
@@ -156,6 +202,8 @@
   </Sheet.Root>
 </div>
 
-<aside class="hidden w-80 shrink-0 border-r border-border/70 bg-card/60 lg:flex lg:flex-col">
+<aside
+  class="hidden w-80 shrink-0 border-r border-border/70 bg-card/60 lg:flex lg:flex-col"
+>
   <div class="min-h-0 flex-1 px-5 py-5">{@render filterForm()}</div>
 </aside>

@@ -23,13 +23,10 @@
   } = $props()
 
   let open = $state(false)
-  let selectedDate = $state<DateValue | undefined>()
-  const displayValue = $derived(value || '')
+  let selectedDate = $derived<DateValue | undefined>(
+    value ? parseDate(value) : undefined,
+  )
   const placeholderDate = $derived(selectedDate ?? today(getLocalTimeZone()))
-
-  $effect(() => {
-    selectedDate = displayValue ? parseDate(displayValue) : undefined
-  })
 
   function formatDateLabel(rawValue: string) {
     if (!rawValue) {
@@ -51,13 +48,20 @@
 </script>
 
 <label class="grid gap-1.5">
-  <span class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+  <span
+    class="text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+    >{label}</span
+  >
   <input type="hidden" {name} value={selectedDate?.toString() ?? ''} />
 
   <Popover.Root bind:open>
     <Popover.Trigger>
       {#snippet child({ props })}
-        <Button variant="outline" class="w-full justify-start text-left font-normal" {...props}>
+        <Button
+          variant="outline"
+          class="w-full justify-start text-left font-normal"
+          {...props}
+        >
           {formatDateLabel(selectedDate?.toString() ?? '')}
         </Button>
       {/snippet}
@@ -78,21 +82,35 @@
       >
         {#snippet children({ months, weekdays })}
           <div class="space-y-3">
-            <CalendarPrimitive.Header class="flex items-center justify-between gap-2">
+            <CalendarPrimitive.Header
+              class="flex items-center justify-between gap-2"
+            >
               <CalendarPrimitive.PrevButton>
                 {#snippet child({ props })}
-                  <Button variant="ghost" size="icon-sm" class="size-7" {...props}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    class="size-7"
+                    {...props}
+                  >
                     <ChevronLeftIcon class="size-4" />
                     <span class="sr-only">Previous month</span>
                   </Button>
                 {/snippet}
               </CalendarPrimitive.PrevButton>
 
-              <CalendarPrimitive.Heading class="text-sm font-medium text-foreground" />
+              <CalendarPrimitive.Heading
+                class="text-sm font-medium text-foreground"
+              />
 
               <CalendarPrimitive.NextButton>
                 {#snippet child({ props })}
-                  <Button variant="ghost" size="icon-sm" class="size-7" {...props}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    class="size-7"
+                    {...props}
+                  >
                     <ChevronRightIcon class="size-4" />
                     <span class="sr-only">Next month</span>
                   </Button>
@@ -104,8 +122,10 @@
               <CalendarPrimitive.Grid class="w-full border-collapse">
                 <CalendarPrimitive.GridHead>
                   <CalendarPrimitive.GridRow>
-                    {#each weekdays as weekday}
-                      <CalendarPrimitive.HeadCell class="h-8 w-9 text-[0.8rem] font-medium text-muted-foreground">
+                    {#each weekdays as weekday (weekday)}
+                      <CalendarPrimitive.HeadCell
+                        class="h-8 w-9 text-[0.8rem] font-medium text-muted-foreground"
+                      >
                         {weekday}
                       </CalendarPrimitive.HeadCell>
                     {/each}
@@ -116,11 +136,22 @@
                   {#each month.weeks as weekDates, weekIndex (`${month.value.toString()}-${weekIndex}`)}
                     <CalendarPrimitive.GridRow>
                       {#each weekDates as dateValue (dateValue.toString())}
-                        <CalendarPrimitive.Cell date={dateValue} month={month.value}>
+                        <CalendarPrimitive.Cell
+                          date={dateValue}
+                          month={month.value}
+                        >
                           {#snippet child({ props })}
-                            <td {...props} class="h-9 w-9 p-0 text-center align-middle">
+                            <td
+                              {...props}
+                              class="h-9 w-9 p-0 text-center align-middle"
+                            >
                               <CalendarPrimitive.Day>
-                                {#snippet child({ props, day, selected, disabled })}
+                                {#snippet child({
+                                  props,
+                                  day,
+                                  selected,
+                                  disabled,
+                                })}
                                   <div
                                     {...props}
                                     class={cn(

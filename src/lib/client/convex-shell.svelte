@@ -2,7 +2,7 @@
   import type { Snippet } from 'svelte'
   import { setupConvex, useConvexClient } from 'convex-svelte'
   import { useClerkContext } from 'svelte-clerk'
-  import { convexAuthReady } from './convex-auth'
+  import { provideConvexAuthReady } from './convex-auth'
 
   const convexUrl =
     import.meta.env.PUBLIC_CONVEX_URL ?? import.meta.env.VITE_CONVEX_URL
@@ -17,6 +17,7 @@
 
   const clerk = useClerkContext()
   const convex = useConvexClient()
+  const convexAuthReady = provideConvexAuthReady()
 
   $effect(() => {
     if (!clerk.isLoaded) {
@@ -26,12 +27,16 @@
 
     if (!clerk.session) {
       convexAuthReady.set(false)
-      convex.setAuth(async () => null, () => {})
+      convex.setAuth(
+        async () => null,
+        () => {},
+      )
       return
     }
 
     convex.setAuth(
-      async () => (await clerk.session?.getToken({ template: 'convex' })) ?? null,
+      async () =>
+        (await clerk.session?.getToken({ template: 'convex' })) ?? null,
       (isAuthenticated) => {
         convexAuthReady.set(isAuthenticated)
       },
