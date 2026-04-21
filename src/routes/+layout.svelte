@@ -28,6 +28,7 @@
   )
   const isScannerRoute = $derived(page.url.pathname === '/scanner')
   const isChartRoute = $derived(page.url.pathname.startsWith('/chart'))
+  const isFullscreenAppRoute = $derived(isScannerRoute || isChartRoute)
   const chartHref = $derived(
     isChartRoute ? page.url.pathname : '/chart/AAPL/2026-01-22',
   )
@@ -53,15 +54,15 @@
   <ConvexShell>
     <div
       class="min-h-dvh bg-background text-foreground antialiased"
-      class:h-dvh={isChartRoute}
-      class:overflow-hidden={isChartRoute}
+      class:h-dvh={isFullscreenAppRoute}
+      class:overflow-hidden={isFullscreenAppRoute}
     >
       {#if !isPublicRoute}
         <header
           class="border-b backdrop-blur"
           style="border-color: rgba(139, 126, 106, 0.15); background: rgba(26, 22, 16, 0.95);"
         >
-          <div class="mx-auto flex h-12 max-w-screen-2xl items-center gap-3 px-4 sm:px-6">
+          <div class="flex h-12 items-center gap-3 px-4">
             <div class="h-7 w-1 rounded-full bg-primary"></div>
             <a
               href="/scanner"

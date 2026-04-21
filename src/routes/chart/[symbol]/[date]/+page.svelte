@@ -8,9 +8,7 @@
   import type { SavedPriceLine } from '$lib/client/chart/user-price-lines'
   import ChartCanvas from './components/chart-canvas.svelte'
   import ChartEmptyState from './components/chart-empty-state.svelte'
-  import ChartIndicatorControls from './components/chart-indicator-controls.svelte'
-  import ChartStatsBar from './components/chart-stats-bar.svelte'
-  import ChartToolbar from './components/chart-toolbar.svelte'
+  import ChartHeader from './components/chart-header.svelte'
   import { normalizeSavedPriceLines } from './chart-drawings'
   import type { ChartCandle } from './chart-types'
 
@@ -68,17 +66,15 @@
     style="background-image: url('data:image/svg+xml,<svg viewBox=&quot;0 0 256 256&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><filter id=&quot;n&quot;><feTurbulence type=&quot;fractalNoise&quot; baseFrequency=&quot;0.9&quot; numOctaves=&quot;4&quot; stitchTiles=&quot;stitch&quot;/></filter><rect width=&quot;100%25&quot; height=&quot;100%25&quot; filter=&quot;url(%23n)&quot;/></svg>'); background-repeat: repeat; background-size: 256px 256px;"
   ></div>
 
-    <ChartToolbar
+    <ChartHeader
       symbol={data.symbol}
       date={data.date}
       {availableDates}
-      previousDate={previousDate}
-      nextDate={nextDate}
+      {activeCandle}
+      bind:showSma
+      bind:showEma
+      bind:showVwap
     />
-
-  <ChartStatsBar {activeCandle} />
-
-  <ChartIndicatorControls bind:showSma bind:showEma bind:showVwap />
 
   {#if data.dbError}
     <div class="flex flex-1 items-center justify-center px-6 py-10">
