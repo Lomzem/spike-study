@@ -22,7 +22,8 @@ import type {
   ChartDrawingState,
   ChartIndicatorState,
 } from './chart-types'
-import { UserPriceLines, type SavedPriceLine } from './chart-user-price-lines'
+import type { SavedPriceLine } from './chart-drawing-types'
+import { UserPriceLines } from './chart-user-price-lines'
 
 interface ChartControllerOptions {
   element: HTMLElement

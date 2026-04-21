@@ -5,7 +5,7 @@ import type {
   ChartDrawingState,
   ChartIndicatorState,
 } from '../chart-types'
-import type { SavedPriceLine } from '../chart-user-price-lines'
+import type { SavedPriceLine } from '../chart-drawing-types'
 
 interface ChartCanvasState {
   candles: Array<ChartCandle>

@@ -5,7 +5,7 @@
     ChartDrawingState,
     ChartIndicatorState,
   } from '../chart-types'
-  import type { SavedPriceLine } from '../chart-user-price-lines'
+  import type { SavedPriceLine } from '../chart-drawing-types'
 
   let {
     candles,

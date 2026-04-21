@@ -1,4 +1,4 @@
-import type { SavedLineStyle, SavedPriceLine } from './chart-user-price-lines'
+import type { SavedLineStyle, SavedPriceLine } from './chart-drawing-types'
 
 export function normalizeSavedPriceLines(
   priceLines:
@@ -9,6 +9,7 @@ export function normalizeSavedPriceLines(
         lineWidth: number
         lineStyle: number
       }>
+    | null
     | undefined,
 ): Array<SavedPriceLine> | null {
   if (!priceLines) {

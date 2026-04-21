@@ -23,10 +23,8 @@ async function getAuthenticatedIdentity(ctx: QueryCtx | MutationCtx) {
   if (!identity) {
     throw new Error('Unauthorized')
   }
-  return {
-    tokenIdentifier: identity.tokenIdentifier,
-    subject: identity.subject,
-  }
+
+  return identity.subject
 }
 
 function normalizeSymbol(symbol: string) {
@@ -70,52 +68,95 @@ function validatePriceLines(
   }
 }
 
+const savedPriceLineArrayValidator = v.array(priceLineValidator)
+
+function toSavedPriceLine(priceLine: {
+  lineId: string
+  price: number
+  color: string
+  lineWidth: number
+  lineStyle: 0 | 1 | 2 | 3 | 4
+}) {
+  return {
+    id: priceLine.lineId,
+    price: priceLine.price,
+    color: priceLine.color,
+    lineWidth: priceLine.lineWidth,
+    lineStyle: priceLine.lineStyle,
+  }
+}
+
+async function getOrCreateUserDrawing(
+  ctx: MutationCtx,
+  clerkUserId: string,
+  symbol: string,
+) {
+  const existing = await ctx.db
+    .query('userDrawings')
+    .withIndex('by_clerkUserId_and_symbol', (q) =>
+      q.eq('clerkUserId', clerkUserId).eq('symbol', symbol),
+    )
+    .unique()
+
+  if (existing) {
+    return existing
+  }
+
+  const now = Date.now()
+  const userDrawingId = await ctx.db.insert('userDrawings', {
+    clerkUserId,
+    symbol,
+    updatedAt: now,
+  })
+
+  const created = await ctx.db.get(userDrawingId)
+
+  if (!created) {
+    throw new Error('Failed to create drawing state')
+  }
+
+  return created
+}
+
 export const getForSymbol = query({
   args: {
     symbol: v.string(),
   },
+  returns: v.union(v.null(), savedPriceLineArrayValidator),
   handler: async (ctx, args) => {
-    const { tokenIdentifier, subject } = await getAuthenticatedIdentity(ctx)
+    const clerkUserId = await getAuthenticatedIdentity(ctx)
     const symbol = normalizeSymbol(args.symbol)
-    const priceLines = await ctx.db
-      .query('priceLines')
-      .withIndex('by_userTokenIdentifier_and_symbol', (q) =>
-        q.eq('userTokenIdentifier', tokenIdentifier).eq('symbol', symbol),
+
+    const drawing = await ctx.db
+      .query('userDrawings')
+      .withIndex('by_clerkUserId_and_symbol', (q) =>
+        q.eq('clerkUserId', clerkUserId).eq('symbol', symbol),
       )
-      .collect()
+      .unique()
 
-    if (priceLines.length === 0) {
-      const legacyDrawing = await ctx.db
-        .query('userDrawings')
-        .withIndex('by_userSubject_and_symbol', (q) =>
-          q.eq('userSubject', subject).eq('symbol', symbol),
-        )
-        .unique()
-
-      if (legacyDrawing?.priceLines) {
-        return legacyDrawing.priceLines
-      }
+    if (!drawing) {
+      return null
     }
 
+    const priceLines = await ctx.db
+      .query('priceLines')
+      .withIndex('by_userDrawingId', (q) => q.eq('userDrawingId', drawing._id))
+      .collect()
+
     return priceLines
-      .sort((left, right) => left._creationTime - right._creationTime)
-      .map((priceLine) => ({
-        id: priceLine.lineId,
-        price: priceLine.price,
-        color: priceLine.color,
-        lineWidth: priceLine.lineWidth,
-        lineStyle: priceLine.lineStyle,
-      }))
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map(toSavedPriceLine)
   },
 })
 
 export const saveForSymbol = mutation({
   args: {
     symbol: v.string(),
-    priceLines: v.array(priceLineValidator),
+    priceLines: savedPriceLineArrayValidator,
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const { tokenIdentifier, subject } = await getAuthenticatedIdentity(ctx)
+    const clerkUserId = await getAuthenticatedIdentity(ctx)
     const symbol = normalizeSymbol(args.symbol)
 
     if (args.priceLines.length > MAX_PRICE_LINES) {
@@ -124,45 +165,15 @@ export const saveForSymbol = mutation({
 
     validatePriceLines(args.priceLines)
 
-    const [drawingDoc, existingPriceLines] = await Promise.all([
-      ctx.db
-        .query('userDrawings')
-        .withIndex('by_userTokenIdentifier_and_symbol', (q) =>
-          q.eq('userTokenIdentifier', tokenIdentifier).eq('symbol', symbol),
-        )
-        .unique(),
-      ctx.db
-        .query('priceLines')
-        .withIndex('by_userTokenIdentifier_and_symbol', (q) =>
-          q.eq('userTokenIdentifier', tokenIdentifier).eq('symbol', symbol),
-        )
-        .collect(),
-    ])
-
-    const resolvedDrawingDoc =
-      drawingDoc ??
-      (await ctx.db
-        .query('userDrawings')
-        .withIndex('by_userSubject_and_symbol', (q) =>
-          q.eq('userSubject', subject).eq('symbol', symbol),
-        )
-        .unique())
+    const drawingDoc = await getOrCreateUserDrawing(ctx, clerkUserId, symbol)
+    const existingPriceLines = await ctx.db
+      .query('priceLines')
+      .withIndex('by_userDrawingId', (q) =>
+        q.eq('userDrawingId', drawingDoc._id),
+      )
+      .collect()
 
     const updatedAt = Date.now()
-
-    if (resolvedDrawingDoc) {
-      await ctx.db.patch('userDrawings', resolvedDrawingDoc._id, {
-        userTokenIdentifier: tokenIdentifier,
-        updatedAt,
-        priceLines: undefined,
-      })
-    } else {
-      await ctx.db.insert('userDrawings', {
-        userTokenIdentifier: tokenIdentifier,
-        symbol,
-        updatedAt,
-      })
-    }
 
     const existingByLineId = new Map(
       existingPriceLines.map((priceLine) => [priceLine.lineId, priceLine]),
@@ -173,28 +184,33 @@ export const saveForSymbol = mutation({
 
     for (const priceLine of existingPriceLines) {
       if (!nextLineIds.has(priceLine.lineId)) {
-        await ctx.db.delete('priceLines', priceLine._id)
+        await ctx.db.delete(priceLine._id)
       }
     }
 
-    for (const priceLine of args.priceLines) {
+    for (const [sortOrder, priceLine] of args.priceLines.entries()) {
       const existingPriceLine = existingByLineId.get(priceLine.id)
       const value = {
+        userDrawingId: drawingDoc._id,
         lineId: priceLine.id,
-        userTokenIdentifier: tokenIdentifier,
-        symbol,
         price: priceLine.price,
         color: priceLine.color,
         lineWidth: priceLine.lineWidth,
         lineStyle: priceLine.lineStyle,
-        updatedAt,
+        sortOrder,
       }
 
       if (existingPriceLine) {
-        await ctx.db.patch('priceLines', existingPriceLine._id, value)
+        await ctx.db.patch(existingPriceLine._id, value)
       } else {
         await ctx.db.insert('priceLines', value)
       }
     }
+
+    await ctx.db.patch(drawingDoc._id, {
+      updatedAt,
+    })
+
+    return null
   },
 })

@@ -1,5 +1,5 @@
 import type { UTCTimestamp } from 'lightweight-charts'
-import type { SavedPriceLine } from './chart-user-price-lines'
+import type { SavedPriceLine } from './chart-drawing-types'
 
 export interface ChartCandle {
   time: UTCTimestamp

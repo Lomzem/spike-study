@@ -4,13 +4,13 @@ import { fromStore } from 'svelte/store'
 import { api } from '../../../../../convex/_generated/api.js'
 import { useConvexAuthReady } from '$lib/client/convex-auth'
 import { normalizeSavedPriceLines } from './chart-drawings'
+import type { SavedPriceLine } from './chart-drawing-types'
 import type {
   ChartCandle,
   ChartDrawingState,
   ChartIndicatorState,
   ChartPageData,
 } from './chart-types'
-import type { SavedPriceLine } from './chart-user-price-lines'
 
 export function createChartPageState(getData: () => ChartPageData) {
   const clerk = useClerkContext()
@@ -24,13 +24,15 @@ export function createChartPageState(getData: () => ChartPageData) {
   let showEma = $state(false)
   let showVwap = $state(false)
 
-  const savedDrawings = useQuery(api.userDrawings.getForSymbol, () =>
+  const canAccessDrawings = $derived(
     !getData().dbError &&
-    clerk.isLoaded &&
-    clerk.auth.userId &&
-    convexAuthReady.current
-      ? { symbol: getData().symbol }
-      : 'skip',
+      clerk.isLoaded &&
+      Boolean(clerk.auth.userId) &&
+      convexAuthReady.current,
+  )
+
+  const savedDrawings = useQuery(api.userDrawings.getForSymbol, () =>
+    canAccessDrawings ? { symbol: getData().symbol } : 'skip',
   )
 
   const normalizedDrawings = $derived(
@@ -59,6 +61,10 @@ export function createChartPageState(getData: () => ChartPageData) {
   )
 
   async function saveDrawings(priceLines: Array<SavedPriceLine>) {
+    if (!canAccessDrawings) {
+      return
+    }
+
     await convex.mutation(api.userDrawings.saveForSymbol, {
       symbol: getData().symbol,
       priceLines,
