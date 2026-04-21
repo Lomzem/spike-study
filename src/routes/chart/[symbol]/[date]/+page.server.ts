@@ -4,6 +4,7 @@ import type { PageServerLoad } from './$types'
 import { getDb } from '$lib/server/db/client.js'
 import { intradayStocksTable } from '$lib/server/db/schema.js'
 import { toChartCandles } from './chart-loader'
+import { buildChartDateHref } from './chart-navigation'
 import type { ChartPageData } from './chart-types'
 
 export const load: PageServerLoad = async ({ params, url }) => {
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
   const selectedDate = url.searchParams.get('selectedDate')?.trim()
 
   if (selectedDate && selectedDate !== routeDate) {
-    throw redirect(307, `/chart/${encodeURIComponent(symbol)}/${selectedDate}`)
+    throw redirect(307, buildChartDateHref(symbol, selectedDate))
   }
 
   let db: ReturnType<typeof getDb>

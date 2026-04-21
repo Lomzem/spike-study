@@ -52,9 +52,6 @@ async function fetchIntradayStock(symbol: string, date: Date) {
   const url = new URL(MASSIVE_DAILY_MARKET_SUMMARY_ENDPOINT)
   const dateString = toDateString(date)
 
-  const previousDate = new Date(date)
-  previousDate.setDate(date.getDate() - 1)
-
   url.pathname += `${symbol}/range/${TIME_MULTIPLIER}/${TIME_FRAME}/${dateString}/${dateString}`
 
   const response = await fetch(url)

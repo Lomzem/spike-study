@@ -1,51 +1,13 @@
 <script lang="ts">
   import type { PageProps } from './$types'
-  import { useConvexClient, useQuery } from 'convex-svelte'
-  import { useClerkContext } from 'svelte-clerk'
-  import { Button } from '$lib/components/ui/button/index.js'
-  import { api } from '../../../../../convex/_generated/api.js'
-  import { useConvexAuthReady } from '$lib/client/convex-auth'
-  import type { SavedPriceLine } from '$lib/client/chart/user-price-lines'
   import ChartCanvas from './components/chart-canvas.svelte'
+  import ChartDbErrorState from './components/chart-db-error-state.svelte'
   import ChartEmptyState from './components/chart-empty-state.svelte'
   import ChartHeader from './components/chart-header.svelte'
-  import { normalizeSavedPriceLines } from './chart-drawings'
-  import type { ChartCandle } from './chart-types'
+  import { createChartPageState } from './chart-page-state.svelte.js'
 
   let { data }: PageProps = $props()
-  const clerk = useClerkContext()
-  const convex = useConvexClient()
-  const convexAuthReady = useConvexAuthReady()
-  let activeCandle = $derived<ChartCandle | null>(data.candles.at(-1) ?? null)
-  let showSma = $state(false)
-  let showEma = $state(false)
-  let showVwap = $state(false)
-  const savedDrawings = useQuery(api.userDrawings.getForSymbol, () =>
-    !data.dbError && clerk.isLoaded && clerk.auth.userId && $convexAuthReady
-      ? { symbol: data.symbol }
-      : 'skip',
-  )
-  const normalizedDrawings = $derived(
-    normalizeSavedPriceLines(savedDrawings.data),
-  )
-  const availableDates = $derived(data.availableDates as Array<string>)
-
-  const currentDateIndex = $derived(availableDates.indexOf(data.date))
-  const previousDate = $derived(
-    currentDateIndex > 0 ? availableDates[currentDateIndex - 1] : null,
-  )
-  const nextDate = $derived(
-    currentDateIndex >= 0 && currentDateIndex < availableDates.length - 1
-      ? availableDates[currentDateIndex + 1]
-      : null,
-  )
-
-  async function handleDrawingsChange(priceLines: Array<SavedPriceLine>) {
-    await convex.mutation(api.userDrawings.saveForSymbol, {
-      symbol: data.symbol,
-      priceLines,
-    })
-  }
+  const chartPage = createChartPageState(() => data)
 </script>
 
 <svelte:head>
@@ -64,41 +26,21 @@
   <ChartHeader
     symbol={data.symbol}
     date={data.date}
-    {availableDates}
-    {activeCandle}
-    bind:showSma
-    bind:showEma
-    bind:showVwap
+    availableDates={chartPage.availableDates}
+    activeCandle={chartPage.activeCandle}
+    bind:showSma={chartPage.showSma}
+    bind:showEma={chartPage.showEma}
+    bind:showVwap={chartPage.showVwap}
   />
 
   {#if data.dbError}
-    <div class="flex flex-1 items-center justify-center px-6 py-10">
-      <section
-        class="w-full max-w-xl rounded-2xl border border-border/70 bg-card/80 p-8 shadow-sm backdrop-blur-sm"
-      >
-        <p
-          class="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-        >
-          Database Setup
-        </p>
-        <h2 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-          Chart is waiting for a database connection
-        </h2>
-        <p class="mt-3 text-sm leading-6 text-muted-foreground">
-          {data.dbError}. Set `DATABASE_URL` or `TURSO_DATABASE_URL` and reload
-          the app.
-        </p>
-        <div class="mt-6">
-          <Button href="/scanner" variant="outline">Back to scanner</Button>
-        </div>
-      </section>
-    </div>
+    <ChartDbErrorState message={data.dbError} />
   {:else if data.candles.length === 0}
     <ChartEmptyState
       symbol={data.symbol}
       date={data.date}
-      {previousDate}
-      {nextDate}
+      previousDate={chartPage.previousDate}
+      nextDate={chartPage.nextDate}
     />
   {:else}
     <section
@@ -106,12 +48,10 @@
     >
       <ChartCanvas
         candles={data.candles}
-        indicators={{ showSma, showEma, showVwap }}
-        drawings={normalizedDrawings
-          ? { symbol: data.symbol, priceLines: normalizedDrawings }
-          : null}
-        onDrawingsChange={handleDrawingsChange}
-        onActiveCandleChange={(candle) => (activeCandle = candle)}
+        indicators={chartPage.indicators}
+        drawings={chartPage.drawings}
+        onDrawingsChange={chartPage.saveDrawings}
+        onActiveCandleChange={chartPage.setActiveCandle}
       />
     </section>
   {/if}

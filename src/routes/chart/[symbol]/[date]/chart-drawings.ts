@@ -1,7 +1,4 @@
-import type {
-  SavedLineStyle,
-  SavedPriceLine,
-} from '$lib/client/chart/user-price-lines'
+import type { SavedLineStyle, SavedPriceLine } from './chart-user-price-lines'
 
 export function normalizeSavedPriceLines(
   priceLines:

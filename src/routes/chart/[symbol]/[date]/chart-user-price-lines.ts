@@ -103,25 +103,25 @@ export class UserPriceLines {
       onChange: options?.onChange,
     }
 
-    const chartOpts = this._chart.options()
+    const chartOptions = this._chart.options()
     this._originalChartOptions = {
-      crosshair: chartOpts.crosshair,
-      handleScroll: chartOpts.handleScroll,
-      handleScale: chartOpts.handleScale,
+      crosshair: chartOptions.crosshair,
+      handleScroll: chartOptions.handleScroll,
+      handleScale: chartOptions.handleScale,
     }
 
     this._chart.applyOptions({
       crosshair: { mode: CrosshairMode.Normal },
     })
 
-    const el = this._chart.chartElement()
+    const chartElement = this._chart.chartElement()
 
-    this._onMouseDown = (e: MouseEvent) => this._handleMouseDown(e)
-    this._onMouseMove = (e: MouseEvent) => this._handleMouseMove(e)
-    this._onMouseUp = (e: MouseEvent) => this._handleMouseUp(e)
-    this._onKeyDown = (e: KeyboardEvent) => this._handleKeyDown(e)
+    this._onMouseDown = (event: MouseEvent) => this._handleMouseDown(event)
+    this._onMouseMove = (event: MouseEvent) => this._handleMouseMove(event)
+    this._onMouseUp = (event: MouseEvent) => this._handleMouseUp(event)
+    this._onKeyDown = (event: KeyboardEvent) => this._handleKeyDown(event)
 
-    el.addEventListener('mousedown', this._onMouseDown)
+    chartElement.addEventListener('mousedown', this._onMouseDown)
     window.addEventListener('mousemove', this._onMouseMove)
     window.addEventListener('mouseup', this._onMouseUp)
     window.addEventListener('keydown', this._onKeyDown)
@@ -154,21 +154,22 @@ export class UserPriceLines {
     this._options.onChange?.(this.exportState())
   }
 
-  private _getLocalY(e: MouseEvent): number {
+  private _getLocalY(event: MouseEvent): number {
     const rect = this._chart.chartElement().getBoundingClientRect()
-    return e.clientY - rect.top
+    return event.clientY - rect.top
   }
 
   private _findLineNearCoordinate(y: number): UserPriceLineRecord | null {
     for (const record of this._lines) {
-      const coord = this._series.priceToCoordinate(record.state.price)
+      const coordinate = this._series.priceToCoordinate(record.state.price)
       if (
-        coord !== null &&
-        Math.abs(coord - y) <= this._options.hitTolerancePx
+        coordinate !== null &&
+        Math.abs(coordinate - y) <= this._options.hitTolerancePx
       ) {
         return record
       }
     }
+
     return null
   }
 
@@ -256,9 +257,10 @@ export class UserPriceLines {
     this._state.dragLine = null
   }
 
-  private _handleMouseDown(e: MouseEvent) {
-    if (e.button !== 0 || this._removed) return
-    const y = this._getLocalY(e)
+  private _handleMouseDown(event: MouseEvent) {
+    if (event.button !== 0 || this._removed) return
+
+    const y = this._getLocalY(event)
     this._state.pointerDownY = y
     this._state.phase = 'pointerDown'
 
@@ -269,9 +271,10 @@ export class UserPriceLines {
     }
   }
 
-  private _handleMouseMove(e: MouseEvent) {
+  private _handleMouseMove(event: MouseEvent) {
     if (this._state.pointerDownY === null || this._removed) return
-    const y = this._getLocalY(e)
+
+    const y = this._getLocalY(event)
 
     if (
       this._state.phase === 'pointerDown' &&
@@ -290,9 +293,10 @@ export class UserPriceLines {
     }
   }
 
-  private _handleMouseUp(e: MouseEvent) {
-    if (e.button !== 0 || this._removed) return
-    const y = this._getLocalY(e)
+  private _handleMouseUp(event: MouseEvent) {
+    if (event.button !== 0 || this._removed) return
+
+    const y = this._getLocalY(event)
     const { dragLine, phase, pointerDownY } = this._state
 
     if (dragLine) {
@@ -327,38 +331,40 @@ export class UserPriceLines {
     if (this._state.selectedLine && this._state.selectedLine !== line) {
       this._applyPersistedStyle(this._state.selectedLine)
     }
+
     this._state.selectedLine = line
+
     if (this._state.selectedLine) {
       this._applySelectedStyle(this._state.selectedLine)
     }
   }
 
-  private _handleKeyDown(e: KeyboardEvent) {
+  private _handleKeyDown(event: KeyboardEvent) {
     if (this._removed) return
 
-    const path = e.composedPath()
+    const path = event.composedPath()
     if (
       path.some(
-        (el) =>
-          el instanceof HTMLInputElement ||
-          el instanceof HTMLTextAreaElement ||
-          el instanceof HTMLSelectElement ||
-          (el instanceof HTMLElement && el.isContentEditable),
+        (element) =>
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement ||
+          element instanceof HTMLSelectElement ||
+          (element instanceof HTMLElement && element.isContentEditable),
       )
     ) {
       return
     }
 
-    if (e.key === 'Escape') {
-      e.preventDefault()
+    if (event.key === 'Escape') {
+      event.preventDefault()
       this._selectLine(null)
       return
     }
 
     if (!this._state.selectedLine) return
 
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      e.preventDefault()
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      event.preventDefault()
       this._removeLine(this._state.selectedLine)
       this._emitChange()
     }
@@ -383,8 +389,8 @@ export class UserPriceLines {
       handleScale: this._originalChartOptions.handleScale,
     })
 
-    const el = this._chart.chartElement()
-    el.removeEventListener('mousedown', this._onMouseDown)
+    const chartElement = this._chart.chartElement()
+    chartElement.removeEventListener('mousedown', this._onMouseDown)
     window.removeEventListener('mousemove', this._onMouseMove)
     window.removeEventListener('mouseup', this._onMouseUp)
     window.removeEventListener('keydown', this._onKeyDown)

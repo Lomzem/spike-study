@@ -3,6 +3,7 @@
   import { parseDate, type DateValue } from '@internationalized/date'
   import CalendarPopover from '$lib/components/date-picker/calendar-popover.svelte'
   import { formatIsoDateLabel } from '$lib/components/date-picker/format-iso-date-label'
+  import { buildChartDateHref } from '../chart-navigation'
 
   let {
     symbol,
@@ -45,7 +46,7 @@
       return
     }
 
-    await goto(`/chart/${encodeURIComponent(symbol)}/${nextDate}`)
+    await goto(buildChartDateHref(symbol, nextDate))
   }
 </script>
 

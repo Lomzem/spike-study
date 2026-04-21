@@ -1,5 +1,5 @@
 import type { LineData, UTCTimestamp, WhitespaceData } from 'lightweight-charts'
-import type { ChartControllerCandle } from './chart-controller'
+import type { ChartCandle } from './chart-types'
 
 type IndicatorPoint = LineData<UTCTimestamp> | WhitespaceData<UTCTimestamp>
 
@@ -8,7 +8,7 @@ function toWhitespacePoint(time: UTCTimestamp): WhitespaceData<UTCTimestamp> {
 }
 
 export function calculateSma(
-  candles: Array<ChartControllerCandle>,
+  candles: Array<ChartCandle>,
   length: number,
 ): Array<IndicatorPoint> {
   const points: Array<IndicatorPoint> = []
@@ -36,7 +36,7 @@ export function calculateSma(
 }
 
 export function calculateEma(
-  candles: Array<ChartControllerCandle>,
+  candles: Array<ChartCandle>,
   length: number,
 ): Array<IndicatorPoint> {
   const points: Array<IndicatorPoint> = []
@@ -67,7 +67,7 @@ export function calculateEma(
 }
 
 export function calculateSessionVwap(
-  candles: Array<ChartControllerCandle>,
+  candles: Array<ChartCandle>,
 ): Array<IndicatorPoint> {
   const points: Array<IndicatorPoint> = []
   let cumulativePriceVolume = 0

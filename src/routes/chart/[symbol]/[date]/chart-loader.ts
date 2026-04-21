@@ -1,8 +1,13 @@
-import type { intradayStocksTable } from '$lib/server/db/schema.js'
-import type { InferSelectModel } from 'drizzle-orm'
 import type { ChartCandle } from './chart-types'
 
-type IntradayRow = InferSelectModel<typeof intradayStocksTable>
+interface IntradayRow {
+  time: number
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
 
 function toChartTimestamp(rawTime: number) {
   return Math.floor(rawTime >= 10_000_000_000 ? rawTime / 1000 : rawTime)

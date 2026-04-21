@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js'
+  import { buildChartDateHref } from '../chart-navigation'
 
   let {
     symbol,
@@ -22,12 +23,12 @@
 
     <div class="mt-6 flex flex-wrap gap-2">
       {#if previousDate}
-        <Button href={`/chart/${encodeURIComponent(symbol)}/${previousDate}`} variant="outline">
+        <Button href={buildChartDateHref(symbol, previousDate)} variant="outline">
           {previousDate}
         </Button>
       {/if}
       {#if nextDate}
-        <Button href={`/chart/${encodeURIComponent(symbol)}/${nextDate}`} variant="outline">
+        <Button href={buildChartDateHref(symbol, nextDate)} variant="outline">
           {nextDate}
         </Button>
       {/if}

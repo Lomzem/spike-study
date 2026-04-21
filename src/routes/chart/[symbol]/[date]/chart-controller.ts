@@ -12,33 +12,22 @@ import {
   type MouseEventParams,
   type UTCTimestamp,
 } from 'lightweight-charts'
-import { calculateEma, calculateSessionVwap, calculateSma } from './indicators'
-import { UserPriceLines, type SavedPriceLine } from './user-price-lines'
-
-export interface ChartControllerCandle {
-  time: UTCTimestamp
-  open: number
-  high: number
-  low: number
-  close: number
-  volume: number
-}
-
-export interface ChartIndicatorState {
-  showSma: boolean
-  showEma: boolean
-  showVwap: boolean
-}
-
-export interface ChartDrawingState {
-  symbol: string
-  priceLines: Array<SavedPriceLine>
-}
+import {
+  calculateEma,
+  calculateSessionVwap,
+  calculateSma,
+} from './chart-indicators'
+import type {
+  ChartCandle,
+  ChartDrawingState,
+  ChartIndicatorState,
+} from './chart-types'
+import { UserPriceLines, type SavedPriceLine } from './chart-user-price-lines'
 
 interface ChartControllerOptions {
   element: HTMLElement
-  candles: Array<ChartControllerCandle>
-  onActiveCandleChange?: (candle: ChartControllerCandle | null) => void
+  candles: Array<ChartCandle>
+  onActiveCandleChange?: (candle: ChartCandle | null) => void
   indicators?: ChartIndicatorState
   drawings?: ChartDrawingState
   onDrawingsChange?: (priceLines: Array<SavedPriceLine>) => void
@@ -53,15 +42,15 @@ export class ChartController {
   private vwapSeries: ISeriesApi<'Line'> | null = null
   private userPriceLines: UserPriceLines | null = null
   private resizeObserver: ResizeObserver
-  private candles: Array<ChartControllerCandle>
-  private indicators: ChartIndicatorState
-  private drawings: ChartDrawingState | null
+  private candleData: Array<ChartCandle>
+  private indicatorState: ChartIndicatorState
+  private drawingState: ChartDrawingState | null
   private onDrawingsChange?: (priceLines: Array<SavedPriceLine>) => void
   private saveTimeout: number | null = null
   private pendingPriceLines: Array<SavedPriceLine> | null = null
   private hydratedDrawingKey: string | null = null
-  private onActiveCandleChange?: (candle: ChartControllerCandle | null) => void
-  private candleLookup: Map<UTCTimestamp, ChartControllerCandle>
+  private onActiveCandleChange?: (candle: ChartCandle | null) => void
+  private candleLookup: Map<UTCTimestamp, ChartCandle>
 
   constructor({
     element,
@@ -71,13 +60,13 @@ export class ChartController {
     drawings,
     onDrawingsChange,
   }: ChartControllerOptions) {
-    this.candles = candles
-    this.indicators = indicators ?? {
+    this.candleData = candles
+    this.indicatorState = indicators ?? {
       showSma: false,
       showEma: false,
       showVwap: false,
     }
-    this.drawings = drawings ?? null
+    this.drawingState = drawings ?? null
     this.onDrawingsChange = onDrawingsChange
     this.onActiveCandleChange = onActiveCandleChange
     this.candleLookup = new Map(candles.map((candle) => [candle.time, candle]))
@@ -175,8 +164,8 @@ export class ChartController {
     this.chart.remove()
   }
 
-  setData(candles: Array<ChartControllerCandle>) {
-    this.candles = candles
+  set candles(candles: Array<ChartCandle>) {
+    this.candleData = candles
     this.candleLookup = new Map(candles.map((candle) => [candle.time, candle]))
     this.candlestickSeries.setData(this.toCandlestickData(candles))
     this.volumeSeries.setData(this.toVolumeData(candles))
@@ -186,19 +175,19 @@ export class ChartController {
     this.syncDrawings()
   }
 
-  setIndicators(indicators: ChartIndicatorState) {
-    this.indicators = indicators
+  set indicators(indicators: ChartIndicatorState) {
+    this.indicatorState = indicators
     this.syncIndicators()
   }
 
-  setDrawings(drawings: ChartDrawingState | null) {
-    this.drawings = drawings
+  set drawings(drawings: ChartDrawingState | null) {
+    this.drawingState = drawings
     this.syncDrawings()
   }
 
   private handleCrosshairMove = (param: MouseEventParams) => {
     if (!param.point || !param.time) {
-      this.onActiveCandleChange?.(this.candles.at(-1) ?? null)
+      this.onActiveCandleChange?.(this.candleData.at(-1) ?? null)
       return
     }
 
@@ -208,7 +197,7 @@ export class ChartController {
   }
 
   private toCandlestickData(
-    candles: Array<ChartControllerCandle>,
+    candles: Array<ChartCandle>,
   ): Array<CandlestickData<UTCTimestamp>> {
     return candles.map((candle) => ({
       time: candle.time,
@@ -220,7 +209,7 @@ export class ChartController {
   }
 
   private toVolumeData(
-    candles: Array<ChartControllerCandle>,
+    candles: Array<ChartCandle>,
   ): Array<HistogramData<UTCTimestamp>> {
     return candles.map((candle) => ({
       time: candle.time,
@@ -235,27 +224,27 @@ export class ChartController {
   private syncIndicators() {
     this.syncLineSeries(
       'smaSeries',
-      this.indicators.showSma,
+      this.indicatorState.showSma,
       '#f59e0b',
       2,
       undefined,
-      calculateSma(this.candles, 9),
+      calculateSma(this.candleData, 9),
     )
     this.syncLineSeries(
       'emaSeries',
-      this.indicators.showEma,
+      this.indicatorState.showEma,
       '#60a5fa',
       2,
       undefined,
-      calculateEma(this.candles, 9),
+      calculateEma(this.candleData, 9),
     )
     this.syncLineSeries(
       'vwapSeries',
-      this.indicators.showVwap,
+      this.indicatorState.showVwap,
       '#c084fc',
       2,
       2,
-      calculateSessionVwap(this.candles),
+      calculateSessionVwap(this.candleData),
     )
   }
 
@@ -289,7 +278,7 @@ export class ChartController {
   }
 
   private syncDrawings() {
-    if (!this.drawings) {
+    if (!this.drawingState) {
       this.userPriceLines?.importState([])
       this.hydratedDrawingKey = null
       return
@@ -306,12 +295,12 @@ export class ChartController {
       )
     }
 
-    const drawingKey = `${this.drawings.symbol}:${JSON.stringify(this.drawings.priceLines)}`
+    const drawingKey = `${this.drawingState.symbol}:${JSON.stringify(this.drawingState.priceLines)}`
     if (this.hydratedDrawingKey === drawingKey) {
       return
     }
 
-    this.userPriceLines.importState(this.drawings.priceLines)
+    this.userPriceLines.importState(this.drawingState.priceLines)
     this.hydratedDrawingKey = drawingKey
   }
 
@@ -321,8 +310,8 @@ export class ChartController {
     }
 
     this.pendingPriceLines = priceLines
-    this.hydratedDrawingKey = this.drawings
-      ? `${this.drawings.symbol}:${JSON.stringify(priceLines)}`
+    this.hydratedDrawingKey = this.drawingState
+      ? `${this.drawingState.symbol}:${JSON.stringify(priceLines)}`
       : JSON.stringify(priceLines)
 
     this.saveTimeout = window.setTimeout(() => {

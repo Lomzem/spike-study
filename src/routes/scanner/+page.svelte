@@ -1,8 +1,10 @@
 <script lang="ts">
   import type { PageProps } from './$types'
-  import { buildScannerSearchParams } from './scanner-url'
   import { Button } from '$lib/components/ui/button/index.js'
-  import type { SortableColumn } from './scanner-types'
+  import {
+    buildScannerPageHref,
+    buildScannerSortHref,
+  } from './scanner-navigation'
   import ScannerEmptyState from './components/scanner-empty-state.svelte'
   import ScannerFilterPanel from './components/scanner-filter-panel.svelte'
   import ScannerResultsHeader from './components/scanner-results-header.svelte'
@@ -15,28 +17,12 @@
   )
   const endRow = $derived(Math.min(data.page * data.pageSize, data.totalCount))
 
-  function buildPageHref(page: number) {
-    return `/scanner?${buildScannerSearchParams({
-      filters: data.filters,
-      sortBy: data.sortBy,
-      sortDir: data.sortDir,
-      page,
-      pageSize: data.pageSize,
-    }).toString()}`
-  }
-
-  function buildSortHref(column: SortableColumn) {
-    const nextDirection =
-      data.sortBy === column && data.sortDir === 'asc' ? 'desc' : 'asc'
-
-    return `/scanner?${buildScannerSearchParams({
-      filters: data.filters,
-      sortBy: column,
-      sortDir: nextDirection,
-      page: 1,
-      pageSize: data.pageSize,
-    }).toString()}`
-  }
+  const navigationState = $derived({
+    filters: data.filters,
+    sortBy: data.sortBy,
+    sortDir: data.sortDir,
+    pageSize: data.pageSize,
+  })
 </script>
 
 <svelte:head>
@@ -85,8 +71,11 @@
         totalCount={data.totalCount}
         page={data.page}
         totalPages={data.totalPages}
-        previousHref={buildPageHref(Math.max(1, data.page - 1))}
-        nextHref={buildPageHref(Math.min(data.totalPages, data.page + 1))}
+        previousHref={buildScannerPageHref(navigationState, Math.max(1, data.page - 1))}
+        nextHref={buildScannerPageHref(
+          navigationState,
+          Math.min(data.totalPages, data.page + 1),
+        )}
       />
     {/if}
 
@@ -95,7 +84,7 @@
         rows={data.rows}
         sortBy={data.sortBy}
         sortDir={data.sortDir}
-        buildSortHref={buildSortHref}
+        buildSortHref={(column) => buildScannerSortHref(navigationState, column)}
       />
     {:else if !data.dbError}
       <ScannerEmptyState hasScanned={data.hasScanned} />

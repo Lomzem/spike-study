@@ -107,13 +107,18 @@ async function insertDailyStocks({
 }
 
 /**
- * Fetches the US market daily summaries for 2026-02-20 and persists them to the daily stocks table.
+ * Fetches the US market daily summaries for the CLI-provided date and persists them to the daily stocks table.
  *
  * If no results are returned for the target date, logs the response and returns early; otherwise transforms
  * and inserts the retrieved summaries into the database.
  */
 async function main() {
   const targetDate = new Date(process.argv[process.argv.length - 1])
+
+  if (isNaN(targetDate.getTime())) {
+    console.error('Usage: fetchDailyStocks.ts <date>')
+    return
+  }
 
   const data = await fetchDailyStocks(targetDate)
 

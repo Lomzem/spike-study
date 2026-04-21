@@ -2,6 +2,11 @@
   import * as Table from '$lib/components/ui/table/index.js'
   import type { ScannerRow, SortDirection, SortableColumn } from '../scanner-types'
   import { SORT_LABELS } from '../scanner-columns'
+  import {
+    formatScannerPercent,
+    formatScannerPrice,
+    formatScannerVolume,
+  } from '../scanner-formatters'
 
   let {
     rows,
@@ -14,19 +19,6 @@
     sortDir?: SortDirection
     buildSortHref: (column: SortableColumn) => string
   } = $props()
-
-  function formatPrice(value: number) {
-    return value.toFixed(2)
-  }
-
-  function formatVolume(value: number) {
-    return value.toLocaleString()
-  }
-
-  function formatPercent(value: number | null) {
-    if (value == null) return '--'
-    return `${(value * 100).toFixed(2)}%`
-  }
 
   function getSortArrow(column: SortableColumn) {
     if (sortBy !== column) {
@@ -63,11 +55,11 @@
             </a>
           </Table.Cell>
           <Table.Cell class="font-mono text-muted-foreground">{row.date}</Table.Cell>
-          <Table.Cell class="text-right font-mono">{formatPrice(row.open)}</Table.Cell>
-          <Table.Cell class="text-right font-mono">{formatPrice(row.close)}</Table.Cell>
-          <Table.Cell class="text-right font-mono">{formatVolume(row.volume)}</Table.Cell>
-          <Table.Cell class="text-right font-mono">{formatPercent(row.gap)}</Table.Cell>
-          <Table.Cell class="text-right font-mono">{formatPercent(row.change)}</Table.Cell>
+          <Table.Cell class="text-right font-mono">{formatScannerPrice(row.open)}</Table.Cell>
+          <Table.Cell class="text-right font-mono">{formatScannerPrice(row.close)}</Table.Cell>
+          <Table.Cell class="text-right font-mono">{formatScannerVolume(row.volume)}</Table.Cell>
+          <Table.Cell class="text-right font-mono">{formatScannerPercent(row.gap)}</Table.Cell>
+          <Table.Cell class="text-right font-mono">{formatScannerPercent(row.change)}</Table.Cell>
         </Table.Row>
       {/each}
     </Table.Body>
