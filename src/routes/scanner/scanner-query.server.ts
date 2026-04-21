@@ -1,0 +1,49 @@
+import type { SQL } from 'drizzle-orm'
+import { eq, gte, lte } from 'drizzle-orm'
+import { dailyStocksTable } from '$lib/server/db/schema.js'
+import type { ScannerFilterValues } from './scanner-types'
+
+function toFiniteNumber(value: string) {
+  if (!value) {
+    return undefined
+  }
+
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+export function buildScannerConditions(
+  filters: ScannerFilterValues,
+): Array<SQL> {
+  const conditions: Array<SQL> = [eq(dailyStocksTable.hasIntraday, true)]
+
+  if (filters.startDate) {
+    conditions.push(gte(dailyStocksTable.date, filters.startDate))
+  }
+
+  if (filters.endDate) {
+    conditions.push(lte(dailyStocksTable.date, filters.endDate))
+  }
+
+  const minVolume = toFiniteNumber(filters.minVolume)
+  if (minVolume != null) {
+    conditions.push(gte(dailyStocksTable.volume, minVolume))
+  }
+
+  const minOpen = toFiniteNumber(filters.minOpen)
+  if (minOpen != null) {
+    conditions.push(gte(dailyStocksTable.open, minOpen))
+  }
+
+  const maxOpen = toFiniteNumber(filters.maxOpen)
+  if (maxOpen != null) {
+    conditions.push(lte(dailyStocksTable.open, maxOpen))
+  }
+
+  const minGap = toFiniteNumber(filters.minGap)
+  if (minGap != null) {
+    conditions.push(gte(dailyStocksTable.gap, minGap / 100))
+  }
+
+  return conditions
+}

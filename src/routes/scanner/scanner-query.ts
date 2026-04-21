@@ -1,6 +1,3 @@
-import type { SQL } from 'drizzle-orm'
-import { eq, gte, lte } from 'drizzle-orm'
-import { dailyStocksTable } from '$lib/server/db/schema.js'
 import {
   PAGE_SIZE_OPTIONS,
   SORTABLE_COLUMNS,
@@ -15,15 +12,6 @@ function getTrimmedValue(
   key: keyof ScannerFilterValues,
 ) {
   return searchParams.get(key)?.trim() ?? ''
-}
-
-function toFiniteNumber(value: string) {
-  if (!value) {
-    return undefined
-  }
-
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : undefined
 }
 
 function toPositiveInteger(value: string | null | undefined) {
@@ -43,6 +31,21 @@ function parseSortBy(value: string | null): SortableColumn | undefined {
 
 function parseSortDirection(value: string | null): SortDirection | undefined {
   return value === 'asc' || value === 'desc' ? value : undefined
+}
+
+function hasScannerQuery(searchParams: URLSearchParams) {
+  return [
+    'startDate',
+    'endDate',
+    'minVolume',
+    'minOpen',
+    'maxOpen',
+    'minGap',
+    'sortBy',
+    'sortDir',
+    'page',
+    'pageSize',
+  ].some((key) => searchParams.has(key))
 }
 
 export function parseScannerQuery(url: URL): ScannerQueryState {
@@ -68,42 +71,6 @@ export function parseScannerQuery(url: URL): ScannerQueryState {
     sortDir: parseSortDirection(url.searchParams.get('sortDir')),
     page: toPositiveInteger(url.searchParams.get('page')) ?? 1,
     pageSize,
-    hasScanned: url.searchParams.has('page'),
+    hasScanned: hasScannerQuery(url.searchParams),
   }
-}
-
-export function buildScannerConditions(
-  filters: ScannerFilterValues,
-): Array<SQL> {
-  const conditions: Array<SQL> = [eq(dailyStocksTable.hasIntraday, true)]
-
-  if (filters.startDate) {
-    conditions.push(gte(dailyStocksTable.date, filters.startDate))
-  }
-
-  if (filters.endDate) {
-    conditions.push(lte(dailyStocksTable.date, filters.endDate))
-  }
-
-  const minVolume = toFiniteNumber(filters.minVolume)
-  if (minVolume != null) {
-    conditions.push(gte(dailyStocksTable.volume, minVolume))
-  }
-
-  const minOpen = toFiniteNumber(filters.minOpen)
-  if (minOpen != null) {
-    conditions.push(gte(dailyStocksTable.open, minOpen))
-  }
-
-  const maxOpen = toFiniteNumber(filters.maxOpen)
-  if (maxOpen != null) {
-    conditions.push(lte(dailyStocksTable.open, maxOpen))
-  }
-
-  const minGap = toFiniteNumber(filters.minGap)
-  if (minGap != null) {
-    conditions.push(gte(dailyStocksTable.gap, minGap / 100))
-  }
-
-  return conditions
 }

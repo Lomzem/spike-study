@@ -4,7 +4,8 @@ import { getDb } from '$lib/server/db/client.js'
 import { dailyStocksTable } from '$lib/server/db/schema.js'
 import { PAGE_SIZE_OPTIONS } from './scanner-types'
 import type { ScannerPageData } from './scanner-types'
-import { buildScannerConditions, parseScannerQuery } from './scanner-query'
+import { parseScannerQuery } from './scanner-query'
+import { buildScannerConditions } from './scanner-query.server'
 import { SORT_COLUMN_MAP } from './scanner-columns.server'
 
 export const load: PageServerLoad = async ({ url }) => {

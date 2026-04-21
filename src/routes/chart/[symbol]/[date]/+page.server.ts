@@ -24,7 +24,6 @@ export const load: PageServerLoad = async ({ params, url }) => {
       symbol,
       date: routeDate,
       availableDates: [],
-      intradayRows: [],
       candles: [],
       dbError:
         error instanceof Error
@@ -57,7 +56,6 @@ export const load: PageServerLoad = async ({ params, url }) => {
     symbol,
     date: routeDate,
     availableDates,
-    intradayRows,
     candles: toChartCandles(intradayRows),
     dbError: undefined,
   } satisfies ChartPageData

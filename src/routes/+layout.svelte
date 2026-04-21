@@ -29,9 +29,6 @@
   const isScannerRoute = $derived(page.url.pathname === '/scanner')
   const isChartRoute = $derived(page.url.pathname.startsWith('/chart'))
   const isFullscreenAppRoute = $derived(isScannerRoute || isChartRoute)
-  const chartHref = $derived(
-    isChartRoute ? page.url.pathname : '/chart/AAPL/2026-01-22',
-  )
 
 </script>
 
@@ -82,13 +79,22 @@
               >
                 Scanner
               </a>
-              <a
-                href={chartHref}
-                class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition-colors"
-                style="color: {isChartRoute ? '#e8dcc8' : '#8b7e6a'}; background: {isChartRoute ? 'rgba(139, 126, 106, 0.15)' : 'transparent'};"
-              >
-                Chart
-              </a>
+              {#if isChartRoute}
+                <a
+                  href={page.url.pathname}
+                  class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition-colors"
+                  style="color: #e8dcc8; background: rgba(139, 126, 106, 0.15);"
+                >
+                  Chart
+                </a>
+              {:else}
+                <span
+                  class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em]"
+                  style="color: #8b7e6a;"
+                >
+                  Chart
+                </span>
+              {/if}
             </nav>
 
             <div class="ml-auto flex h-8 w-8 items-center justify-center">

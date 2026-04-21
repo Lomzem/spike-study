@@ -1,6 +1,3 @@
-import type { dailyStocksTable } from '$lib/server/db/schema.js'
-import type { InferSelectModel } from 'drizzle-orm'
-
 export const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const
 
 export const SORTABLE_COLUMNS = [
@@ -34,7 +31,15 @@ export interface ScannerQueryState {
   hasScanned: boolean
 }
 
-export type ScannerRow = InferSelectModel<typeof dailyStocksTable>
+export interface ScannerRow {
+  symbol: string
+  date: string
+  open: number
+  close: number
+  volume: number
+  gap: number | null
+  change: number | null
+}
 
 export interface ScannerPageData {
   filters: ScannerFilterValues

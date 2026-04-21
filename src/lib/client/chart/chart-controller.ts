@@ -290,6 +290,8 @@ export class ChartController {
 
   private syncDrawings() {
     if (!this.drawings) {
+      this.userPriceLines?.importState([])
+      this.hydratedDrawingKey = null
       return
     }
 
