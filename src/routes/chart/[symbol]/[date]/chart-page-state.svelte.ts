@@ -1,21 +1,12 @@
-import { useConvexClient, useQuery } from 'convex-svelte'
-import { useClerkContext } from 'svelte-clerk'
-import { fromStore } from 'svelte/store'
-import { api } from '../../../../../convex/_generated/api.js'
-import { useConvexAuthReady } from '$lib/client/convex-auth'
-import { normalizeSavedPriceLines } from './chart-drawings'
-import type { SavedPriceLine } from './chart-drawing-types'
+import { createChartDrawingPersistence } from './chart-drawing-persistence.svelte'
 import type {
   ChartCandle,
-  ChartDrawingState,
   ChartIndicatorState,
   ChartPageData,
 } from './chart-types'
 
 export function createChartPageState(getData: () => ChartPageData) {
-  const clerk = useClerkContext()
-  const convex = useConvexClient()
-  const convexAuthReady = fromStore(useConvexAuthReady())
+  const drawingPersistence = createChartDrawingPersistence(getData)
 
   let activeCandle = $state<ChartCandle | null>(
     getData().candles.at(-1) ?? null,
@@ -23,26 +14,6 @@ export function createChartPageState(getData: () => ChartPageData) {
   let showSma = $state(false)
   let showEma = $state(false)
   let showVwap = $state(false)
-
-  const canAccessDrawings = $derived(
-    !getData().dbError &&
-      clerk.isLoaded &&
-      Boolean(clerk.auth.userId) &&
-      convexAuthReady.current,
-  )
-
-  const savedDrawings = useQuery(api.userDrawings.getForSymbol, () =>
-    canAccessDrawings ? { symbol: getData().symbol } : 'skip',
-  )
-
-  const normalizedDrawings = $derived(
-    normalizeSavedPriceLines(savedDrawings.data),
-  )
-  const drawings = $derived<ChartDrawingState | null>(
-    normalizedDrawings
-      ? { symbol: getData().symbol, priceLines: normalizedDrawings }
-      : null,
-  )
   const availableDates = $derived(getData().availableDates)
   const indicators = $derived<ChartIndicatorState>({
     showSma,
@@ -60,17 +31,6 @@ export function createChartPageState(getData: () => ChartPageData) {
       : null,
   )
 
-  async function saveDrawings(priceLines: Array<SavedPriceLine>) {
-    if (!canAccessDrawings) {
-      return
-    }
-
-    await convex.mutation(api.userDrawings.saveForSymbol, {
-      symbol: getData().symbol,
-      priceLines,
-    })
-  }
-
   function setActiveCandle(candle: ChartCandle | null) {
     activeCandle = candle
   }
@@ -83,7 +43,7 @@ export function createChartPageState(getData: () => ChartPageData) {
       return availableDates
     },
     get drawings() {
-      return drawings
+      return drawingPersistence.drawings
     },
     get indicators() {
       return indicators
@@ -94,7 +54,7 @@ export function createChartPageState(getData: () => ChartPageData) {
     get previousDate() {
       return previousDate
     },
-    saveDrawings,
+    saveDrawings: drawingPersistence.saveDrawings,
     setActiveCandle,
     get showEma() {
       return showEma

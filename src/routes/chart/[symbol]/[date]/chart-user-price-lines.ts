@@ -1,6 +1,14 @@
 import { CrosshairMode, LineStyle } from 'lightweight-charts'
-import type { IChartApi, IPriceLine, ISeriesApi } from 'lightweight-charts'
+import type { IChartApi, ISeriesApi } from 'lightweight-charts'
 import type { SavedPriceLine } from './chart-drawing-types'
+import {
+  buildLineStateFromCoordinate,
+  findLineNearCoordinate,
+  isFiniteNumber,
+  isTextInputEventTarget,
+  normalizeLineWidth,
+  type UserPriceLineRecord,
+} from './chart-user-price-line-utils'
 
 export interface UserPriceLinesOptions {
   color?: string
@@ -18,36 +26,11 @@ const DEFAULT_HIT_TOLERANCE_PX = 5
 
 type InteractionPhase = 'idle' | 'pointerDown' | 'dragging'
 
-interface UserPriceLineRecord {
-  line: IPriceLine
-  state: SavedPriceLine
-}
-
 interface InteractionState {
   phase: InteractionPhase
   pointerDownY: number | null
   dragLine: UserPriceLineRecord | null
   selectedLine: UserPriceLineRecord | null
-}
-
-function createLineId() {
-  return crypto.randomUUID()
-}
-
-function isFiniteNumber(value: number) {
-  return Number.isFinite(value)
-}
-
-function normalizeLineWidth(lineWidth: number): 1 | 2 | 3 | 4 {
-  if (
-    Number.isFinite(lineWidth) &&
-    Number.isInteger(lineWidth) &&
-    (lineWidth === 1 || lineWidth === 2 || lineWidth === 3 || lineWidth === 4)
-  ) {
-    return lineWidth
-  }
-
-  return 1
 }
 
 export class UserPriceLines {
@@ -151,32 +134,20 @@ export class UserPriceLines {
   }
 
   private _findLineNearCoordinate(y: number): UserPriceLineRecord | null {
-    for (const record of this._lines) {
-      const coordinate = this._series.priceToCoordinate(record.state.price)
-      if (
-        coordinate !== null &&
-        Math.abs(coordinate - y) <= this._options.hitTolerancePx
-      ) {
-        return record
-      }
-    }
-
-    return null
+    return findLineNearCoordinate(
+      this._lines,
+      this._series,
+      y,
+      this._options.hitTolerancePx,
+    )
   }
 
   private _buildLineStateFromCoordinate(y: number): SavedPriceLine | null {
-    const price = this._series.coordinateToPrice(y)
-    if (price === null) {
-      return null
-    }
-
-    return {
-      id: createLineId(),
-      price,
+    return buildLineStateFromCoordinate(this._series, y, {
       color: this._options.color,
       lineWidth: this._options.lineWidth,
       lineStyle: this._options.lineStyle,
-    }
+    })
   }
 
   private _createLine(state: SavedPriceLine): UserPriceLineRecord {
@@ -333,16 +304,7 @@ export class UserPriceLines {
   private _handleKeyDown(event: KeyboardEvent) {
     if (this._removed) return
 
-    const path = event.composedPath()
-    if (
-      path.some(
-        (element) =>
-          element instanceof HTMLInputElement ||
-          element instanceof HTMLTextAreaElement ||
-          element instanceof HTMLSelectElement ||
-          (element instanceof HTMLElement && element.isContentEditable),
-      )
-    ) {
+    if (isTextInputEventTarget(event)) {
       return
     }
 
