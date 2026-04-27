@@ -1,10 +1,12 @@
 import * as dotenv from 'dotenv'
 import { toDateString } from './dateUtil'
-import type { DailyStocksTableRow } from '~/market-data/schema'
-import db from '~/market-data/db'
-import { dailyStocksTable } from '~/market-data/schema'
+import type { DailyStocksRow } from '../lib/server/db/schema.js'
+import { getScriptDb } from '../lib/server/db/script-client.js'
+import { dailyStocksTable } from '../lib/server/db/schema.js'
 
 dotenv.config({ path: '.env.local' })
+
+const db = getScriptDb()
 
 const MASSIVE_API_KEY = process.env.MASSIVE_API_KEY
 if (!MASSIVE_API_KEY) {
@@ -79,7 +81,7 @@ async function insertDailyStocks({
   date: Date
   results: Array<MassiveDailyMarketSummaryResult>
 }) {
-  const rowsWithCalculations: Array<DailyStocksTableRow> = results.map((r) => ({
+  const rowsWithCalculations: Array<DailyStocksRow> = results.map((r) => ({
     date: toDateString(date),
     symbol: r.T,
     open: r.o,
@@ -105,13 +107,26 @@ async function insertDailyStocks({
 }
 
 /**
- * Fetches the US market daily summaries for 2026-02-20 and persists them to the daily stocks table.
+ * Fetches the US market daily summaries for the CLI-provided date and persists them to the daily stocks table.
  *
  * If no results are returned for the target date, logs the response and returns early; otherwise transforms
  * and inserts the retrieved summaries into the database.
  */
 async function main() {
-  const targetDate = new Date(process.argv[process.argv.length - 1])
+  const args = process.argv.slice(2)
+  const positionalArgs = args.filter((arg) => !arg.startsWith('-'))
+
+  if (positionalArgs.length !== 1) {
+    console.error('Usage: fetchDailyStocks.ts <date>')
+    process.exit(1)
+  }
+
+  const targetDate = new Date(positionalArgs[0])
+
+  if (isNaN(targetDate.getTime())) {
+    console.error('Usage: fetchDailyStocks.ts <date>')
+    process.exit(1)
+  }
 
   const data = await fetchDailyStocks(targetDate)
 
