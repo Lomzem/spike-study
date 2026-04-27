@@ -12,38 +12,52 @@
   let { children }: { children: Snippet } = $props()
   const convexAuthReady = provideConvexAuthReady()
 
-
   if (browser && hasConvexConfig) {
     setupConvex(convexUrl)
 
     const clerk = useClerkContext()
     const convex = useConvexClient()
+    let authMode = $state<'loading' | 'signed-out' | 'signed-in'>('loading')
+
+    async function fetchConvexToken() {
+      return (await clerk.session?.getToken({ template: 'convex' })) ?? null
+    }
+
+    function handleAuthChange(isAuthenticated: boolean) {
+      convexAuthReady.set(isAuthenticated)
+    }
+
+    async function clearConvexAuth() {
+      convexAuthReady.set(false)
+      convex.setAuth(
+        async () => null,
+        () => {},
+      )
+    }
+
+    async function configureConvexAuth() {
+      convex.setAuth(fetchConvexToken, handleAuthChange)
+    }
 
     $effect(() => {
       if (!clerk.isLoaded) {
-        convexAuthReady.set(false)
+        authMode = 'loading'
         return
       }
 
       if (!clerk.session) {
-        convexAuthReady.set(false)
-        convex.setAuth(
-          async () => null,
-          () => {},
-        )
+        if (authMode !== 'signed-out') {
+          authMode = 'signed-out'
+          void clearConvexAuth()
+        }
         return
       }
 
-      convex.setAuth(
-        async () =>
-          (await clerk.session?.getToken({ template: 'convex' })) ?? null,
-        (isAuthenticated) => {
-          convexAuthReady.set(isAuthenticated)
-        },
-      )
+      if (authMode !== 'signed-in') {
+        authMode = 'signed-in'
+        void configureConvexAuth()
+      }
     })
-  } else {
-    convexAuthReady.set(false)
   }
 </script>
 

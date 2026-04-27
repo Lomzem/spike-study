@@ -92,14 +92,18 @@ export class ChartController {
   }
 
   destroy() {
+    if (this.disposed) {
+      return
+    }
+
     this.disposed = true
-    this.indicatorSeries.removeAll()
+    this.indicatorSeries?.removeAll()
     this.userPriceLines?.remove()
     this.userPriceLines = null
-    this.drawingSaveQueue.cancel()
-    this.resizeObserver.disconnect()
-    this.chart.unsubscribeCrosshairMove(this.handleCrosshairMove)
-    this.chart.remove()
+    this.drawingSaveQueue?.cancel()
+    this.resizeObserver?.disconnect()
+    this.chart?.unsubscribeCrosshairMove(this.handleCrosshairMove)
+    this.chart?.remove()
   }
 
   set candles(candles: Array<ChartCandle>) {
@@ -145,7 +149,8 @@ export class ChartController {
 
   private syncDrawings() {
     if (!this.drawingState) {
-      this.userPriceLines?.importState([])
+      this.userPriceLines?.remove()
+      this.userPriceLines = null
       this.hydratedDrawingKey = null
       return
     }

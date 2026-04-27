@@ -60,6 +60,7 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+
     background-image:
       radial-gradient(
         circle at top left,
@@ -69,7 +70,7 @@
       linear-gradient(180deg, #1a1610 0%, #17130e 100%);
   }
 
-  a {
-    @apply outline-none;
+  a:focus-visible {
+    @apply ring-ring/50 outline-none ring-2 ring-offset-2 ring-offset-background;
   }
 }

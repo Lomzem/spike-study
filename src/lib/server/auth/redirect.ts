@@ -3,7 +3,7 @@ const DEFAULT_REDIRECT_TARGET = '/scanner'
 function hasControlCharacters(value: string) {
   for (const char of value) {
     const code = char.charCodeAt(0)
-    if ((code >= 0 && code <= 31) || code === 127) {
+    if (code <= 31 || code === 127) {
       return true
     }
   }

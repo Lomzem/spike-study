@@ -4,7 +4,22 @@ import { dailyStocksTable } from '$lib/server/db/schema.js'
 import type { ScannerFilterValues } from './scanner-types'
 
 function isValidScannerDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+
+  if (Number.isNaN(date.getTime())) {
+    return false
+  }
+
+  const normalizedYear = String(date.getUTCFullYear()).padStart(4, '0')
+  const normalizedMonth = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const normalizedDay = String(date.getUTCDate()).padStart(2, '0')
+
+  return `${normalizedYear}-${normalizedMonth}-${normalizedDay}` === value
 }
 
 function toFiniteNumber(value: string) {

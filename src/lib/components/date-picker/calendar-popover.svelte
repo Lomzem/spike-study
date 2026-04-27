@@ -49,7 +49,7 @@
     open = false
 
     const result = onSelect?.(nextValue)
-    if (result) {
+    if (result instanceof Promise) {
       void result.catch((error) => {
         console.error('Calendar selection handler failed', error)
       })

@@ -1,4 +1,5 @@
 import { and, asc, count, desc } from 'drizzle-orm'
+import { dev } from '$app/environment'
 import type { PageServerLoad } from './$types'
 import { getDb } from '$lib/server/db/client.js'
 import { dailyStocksTable } from '$lib/server/db/schema.js'
@@ -7,6 +8,8 @@ import type { ScannerPageData } from './scanner-types'
 import { parseScannerQuery } from './scanner-query'
 import { buildScannerConditions } from './scanner-query.server'
 import { SORT_COLUMN_MAP } from './scanner-columns.server'
+
+const GENERIC_DB_ERROR = 'Database is unavailable right now.'
 
 export const load: PageServerLoad = async ({ url }) => {
   const queryState = parseScannerQuery(url)
@@ -29,12 +32,11 @@ export const load: PageServerLoad = async ({ url }) => {
   try {
     db = getDb()
   } catch (error) {
+    console.error('Failed to initialize scanner database', error)
+
     return {
       ...shared,
-      dbError:
-        error instanceof Error
-          ? error.message
-          : 'Database configuration is missing.',
+      dbError: dev && error instanceof Error ? error.message : GENERIC_DB_ERROR,
     }
   }
 
@@ -73,7 +75,15 @@ export const load: PageServerLoad = async ({ url }) => {
       : [desc(SORT_COLUMN_MAP.date), asc(SORT_COLUMN_MAP.symbol)]
 
     const rows = await db
-      .select()
+      .select({
+        symbol: dailyStocksTable.symbol,
+        date: dailyStocksTable.date,
+        open: dailyStocksTable.open,
+        close: dailyStocksTable.close,
+        volume: dailyStocksTable.volume,
+        gap: dailyStocksTable.gap,
+        change: dailyStocksTable.change,
+      })
       .from(dailyStocksTable)
       .where(whereClause)
       .orderBy(...orderBy)
@@ -88,10 +98,11 @@ export const load: PageServerLoad = async ({ url }) => {
       totalPages,
     } satisfies ScannerPageData
   } catch (error) {
+    console.error('Failed to load scanner results', error)
+
     return {
       ...shared,
-      dbError:
-        error instanceof Error ? error.message : 'Database query failed.',
+      dbError: dev && error instanceof Error ? error.message : GENERIC_DB_ERROR,
     } satisfies ScannerPageData
   }
 }

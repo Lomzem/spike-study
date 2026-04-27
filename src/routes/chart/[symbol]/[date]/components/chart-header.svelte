@@ -61,6 +61,8 @@
             variant={showSma ? 'default' : 'outline'}
             size="sm"
             class="w-full justify-start"
+            aria-pressed={showSma}
+            aria-label="Toggle SMA 9 indicator"
             onclick={() => (showSma = !showSma)}
           >
             SMA 9
@@ -71,6 +73,8 @@
             variant={showEma ? 'default' : 'outline'}
             size="sm"
             class="w-full justify-start"
+            aria-pressed={showEma}
+            aria-label="Toggle EMA 9 indicator"
             onclick={() => (showEma = !showEma)}
           >
             EMA 9
@@ -81,6 +85,8 @@
             variant={showVwap ? 'default' : 'outline'}
             size="sm"
             class="w-full justify-start"
+            aria-pressed={showVwap}
+            aria-label="Toggle VWAP indicator"
             onclick={() => (showVwap = !showVwap)}
           >
             VWAP

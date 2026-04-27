@@ -12,6 +12,7 @@ export const schema = defineSchema({
     lineId: v.string(),
     price: v.number(),
     color: v.string(),
+    // Keep this permissive so legacy saved values can still be read and normalized.
     lineWidth: v.number(),
     lineStyle: v.union(
       v.literal(0),
