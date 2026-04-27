@@ -1,4 +1,5 @@
 import type {
+  AutoscaleInfo,
   IChartApi,
   IPrimitivePaneRenderer,
   IPrimitivePaneView,
@@ -21,6 +22,7 @@ import {
 import { renderDiagonalLine } from './tools/diagonal-line'
 import { renderFibRetracement } from './tools/fib-retracement'
 import {
+  getHorizontalLineY,
   getHorizontalLineLabelPoint,
   renderHorizontalLine,
 } from './tools/horizontal-line'
@@ -83,9 +85,9 @@ class DrawingsPaneRenderer implements IPrimitivePaneRenderer {
       switch (drawing.type) {
         case 'horizontal-line': {
           renderHorizontalLine(context, viewport, drawing, selected)
-          const point = anchorToPoint(viewport, drawing.anchors[0])
-          if (point) {
-            const labelPoint = getHorizontalLineLabelPoint(viewport, point)
+          const y = getHorizontalLineY(viewport, drawing)
+          if (y !== null) {
+            const labelPoint = getHorizontalLineLabelPoint(viewport, y)
             context.save()
             context.font = '11px var(--font-sans)'
             context.textAlign = 'right'
@@ -131,6 +133,10 @@ class DrawingsPrimitive {
 
   paneViews() {
     return [this.paneView]
+  }
+
+  autoscaleInfo(): AutoscaleInfo | null {
+    return this.source.getAutoscaleInfo()
   }
 
   hitTest(x: number, y: number) {
@@ -280,6 +286,38 @@ export class ChartDrawingsController {
     this.selectedId = null
     this.primitive.requestRender()
     this.onSelectionChange?.(null)
+  }
+
+  getAutoscaleInfo(): AutoscaleInfo | null {
+    const prices: Array<number> = []
+
+    for (const drawing of this._drawings) {
+      for (const anchor of drawing.anchors) {
+        prices.push(anchor.price)
+      }
+
+      if (drawing.type === 'fib-retracement') {
+        for (const level of drawing.levels) {
+          if (!level.visible) {
+            continue
+          }
+
+          const [start, end] = drawing.anchors
+          prices.push(start.price + (end.price - start.price) * level.value)
+        }
+      }
+    }
+
+    if (prices.length === 0) {
+      return null
+    }
+
+    return {
+      priceRange: {
+        minValue: Math.min(...prices),
+        maxValue: Math.max(...prices),
+      },
+    }
   }
 
   getViewport(scope?: MediaCoordinatesRenderingScope): DrawingViewport | null {

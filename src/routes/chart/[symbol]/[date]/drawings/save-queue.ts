@@ -1,44 +1,47 @@
 import type { SavedDrawing } from './types'
 
 export class DrawingSaveQueue {
-  private onFlush?: (drawings: Array<SavedDrawing>) => void
-  private saveTimeout: number | null = null
+  private onFlush?: (drawings: Array<SavedDrawing>) => Promise<void> | void
   private pendingDrawings: Array<SavedDrawing> | null = null
+  private flushPromise: Promise<void> | null = null
 
-  constructor(onFlush?: (drawings: Array<SavedDrawing>) => void) {
+  constructor(
+    onFlush?: (drawings: Array<SavedDrawing>) => Promise<void> | void,
+  ) {
     this.onFlush = onFlush
   }
 
   schedule(drawings: Array<SavedDrawing>) {
-    if (this.saveTimeout !== null) {
-      window.clearTimeout(this.saveTimeout)
-    }
-
     this.pendingDrawings = drawings
-    this.saveTimeout = window.setTimeout(() => {
-      this.flush()
-    }, 500)
+
+    if (!this.flushPromise) {
+      this.flushPromise = this.runFlushLoop()
+    }
   }
 
   flush() {
-    if (this.saveTimeout !== null) {
-      window.clearTimeout(this.saveTimeout)
+    if (!this.flushPromise && this.pendingDrawings) {
+      this.flushPromise = this.runFlushLoop()
     }
-
-    if (this.pendingDrawings) {
-      this.onFlush?.(this.pendingDrawings)
-    }
-
-    this.pendingDrawings = null
-    this.saveTimeout = null
   }
 
   cancel() {
-    if (this.saveTimeout !== null) {
-      window.clearTimeout(this.saveTimeout)
-    }
-
-    this.saveTimeout = null
     this.pendingDrawings = null
+  }
+
+  private async runFlushLoop() {
+    try {
+      while (this.pendingDrawings) {
+        const drawings = this.pendingDrawings
+        this.pendingDrawings = null
+        await this.onFlush?.(drawings)
+      }
+    } finally {
+      this.flushPromise = null
+
+      if (this.pendingDrawings) {
+        this.flushPromise = this.runFlushLoop()
+      }
+    }
   }
 }

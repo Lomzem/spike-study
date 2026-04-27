@@ -17,7 +17,7 @@
 
     const clerk = useClerkContext()
     const convex = useConvexClient()
-    let authMode = $state<'loading' | 'signed-out' | 'signed-in'>('loading')
+    let authMode: 'loading' | 'signed-out' | 'signed-in' = 'loading'
 
     async function fetchConvexToken() {
       return (await clerk.session?.getToken({ template: 'convex' })) ?? null
@@ -25,18 +25,6 @@
 
     function handleAuthChange(isAuthenticated: boolean) {
       convexAuthReady.set(isAuthenticated)
-    }
-
-    async function clearConvexAuth() {
-      convexAuthReady.set(false)
-      convex.setAuth(
-        async () => null,
-        () => {},
-      )
-    }
-
-    async function configureConvexAuth() {
-      convex.setAuth(fetchConvexToken, handleAuthChange)
     }
 
     $effect(() => {
@@ -48,14 +36,18 @@
       if (!clerk.session) {
         if (authMode !== 'signed-out') {
           authMode = 'signed-out'
-          void clearConvexAuth()
+          convexAuthReady.set(false)
+          convex.setAuth(
+            async () => null,
+            () => {},
+          )
         }
         return
       }
 
       if (authMode !== 'signed-in') {
         authMode = 'signed-in'
-        void configureConvexAuth()
+        convex.setAuth(fetchConvexToken, handleAuthChange)
       }
     })
   }

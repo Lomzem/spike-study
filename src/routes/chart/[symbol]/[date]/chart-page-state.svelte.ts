@@ -8,6 +8,8 @@ import type {
 export function createChartPageState(getData: () => ChartPageData) {
   const drawingPersistence = createDrawingPersistence(getData)
   const candles = $derived(getData().candles)
+  const drawings = $derived(drawingPersistence.drawings)
+  const drawingDefaults = $derived(drawingPersistence.defaults)
 
   let activeCandle = $derived<ChartCandle | null>(candles.at(-1) ?? null)
   let showSma = $state(false)
@@ -42,10 +44,10 @@ export function createChartPageState(getData: () => ChartPageData) {
       return availableDates
     },
     get drawings() {
-      return drawingPersistence.drawings
+      return drawings
     },
     get drawingDefaults() {
-      return drawingPersistence.defaults
+      return drawingDefaults
     },
     get indicators() {
       return indicators

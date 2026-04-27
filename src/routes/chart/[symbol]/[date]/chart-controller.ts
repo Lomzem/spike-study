@@ -146,7 +146,6 @@ export class ChartController {
     this.drawingsController?.destroy()
     this.drawingsController = null
     this.drawingSaveQueue?.flush()
-    this.drawingSaveQueue?.cancel()
     this.resizeObserver?.disconnect()
     this.chart?.unsubscribeCrosshairMove(this.handleCrosshairMove)
     this.chart?.remove()

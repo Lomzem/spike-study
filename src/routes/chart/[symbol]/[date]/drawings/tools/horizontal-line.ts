@@ -1,4 +1,4 @@
-import type { DrawingViewport, DrawingPoint } from '../primitive-helpers'
+import type { DrawingViewport } from '../primitive-helpers'
 import {
   applyCanvasLineStyle,
   anchorToPoint,
@@ -6,28 +6,38 @@ import {
 } from '../primitive-helpers'
 import type { HorizontalLineDrawing } from '../types'
 
+export function getHorizontalLineY(
+  viewport: DrawingViewport,
+  drawing: HorizontalLineDrawing,
+) {
+  return viewport.priceToCoordinate(drawing.anchors[0].price)
+}
+
 export function renderHorizontalLine(
   context: CanvasRenderingContext2D,
   viewport: DrawingViewport,
   drawing: HorizontalLineDrawing,
   selected: boolean,
 ) {
-  const point = anchorToPoint(viewport, drawing.anchors[0])
-  if (!point) {
+  const y = getHorizontalLineY(viewport, drawing)
+  if (y === null) {
     return
   }
+
+  const point = anchorToPoint(viewport, drawing.anchors[0])
 
   context.save()
   context.strokeStyle = drawing.color
   context.lineWidth = selected ? drawing.lineWidth + 1 : drawing.lineWidth
   applyCanvasLineStyle(context, drawing.lineStyle)
-  const startX = drawing.extendLeft ? 0 : point.x
-  const endX = drawing.extendRight ? viewport.width : point.x
+  const anchorX = point?.x ?? viewport.width / 2
+  const startX = drawing.extendLeft ? 0 : anchorX
+  const endX = drawing.extendRight ? viewport.width : anchorX
   context.beginPath()
-  context.moveTo(startX, point.y)
-  context.lineTo(endX, point.y)
+  context.moveTo(startX, y)
+  context.lineTo(endX, y)
   context.stroke()
-  if (selected) {
+  if (selected && point) {
     drawControlPoint(context, point, drawing.color)
   }
   context.restore()
@@ -35,7 +45,7 @@ export function renderHorizontalLine(
 
 export function getHorizontalLineLabelPoint(
   viewport: DrawingViewport,
-  point: DrawingPoint,
+  y: number,
 ) {
-  return { x: viewport.width - 8, y: point.y - 4 }
+  return { x: viewport.width - 8, y: y - 4 }
 }

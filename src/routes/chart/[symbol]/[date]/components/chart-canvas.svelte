@@ -147,7 +147,6 @@
 
   function handleDrawingsChange(nextDrawings: Array<SavedDrawing>) {
     drawingCount = nextDrawings.length
-    onDrawingsChange?.(nextDrawings)
   }
 
   function handleLineConfirm(drawing: HorizontalLineDrawing | DiagonalLineDrawing) {
