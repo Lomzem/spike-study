@@ -6,7 +6,7 @@ const priceLineValidator = v.object({
   id: v.string(),
   price: v.number(),
   color: v.string(),
-  lineWidth: v.number(),
+  lineWidth: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
   lineStyle: v.union(
     v.literal(0),
     v.literal(1),
@@ -17,6 +17,19 @@ const priceLineValidator = v.object({
 })
 
 const MAX_PRICE_LINES = 250
+
+function normalizeSavedLineWidth(lineWidth: number): 1 | 2 | 3 | 4 {
+  if (
+    lineWidth === 1 ||
+    lineWidth === 2 ||
+    lineWidth === 3 ||
+    lineWidth === 4
+  ) {
+    return lineWidth
+  }
+
+  return 1
+}
 
 async function getAuthenticatedIdentity(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity()
@@ -33,7 +46,9 @@ function normalizeSymbol(symbol: string) {
 
 function isValidLineWidth(lineWidth: number) {
   return (
-    Number.isFinite(lineWidth) && Number.isInteger(lineWidth) && lineWidth > 0
+    Number.isFinite(lineWidth) &&
+    Number.isInteger(lineWidth) &&
+    (lineWidth === 1 || lineWidth === 2 || lineWidth === 3 || lineWidth === 4)
   )
 }
 
@@ -81,7 +96,7 @@ function toSavedPriceLine(priceLine: {
     id: priceLine.lineId,
     price: priceLine.price,
     color: priceLine.color,
-    lineWidth: priceLine.lineWidth,
+    lineWidth: normalizeSavedLineWidth(priceLine.lineWidth),
     lineStyle: priceLine.lineStyle,
   }
 }
@@ -141,7 +156,7 @@ export const getForSymbol = query({
     const priceLines = await ctx.db
       .query('priceLines')
       .withIndex('by_userDrawingId', (q) => q.eq('userDrawingId', drawing._id))
-      .collect()
+      .take(MAX_PRICE_LINES)
 
     return priceLines
       .sort((left, right) => left.sortOrder - right.sortOrder)

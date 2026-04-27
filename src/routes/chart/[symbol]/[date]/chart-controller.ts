@@ -43,6 +43,7 @@ export class ChartController {
   private hydratedDrawingKey: string | null = null
   private onActiveCandleChange?: (candle: ChartCandle | null) => void
   private candleLookup: Map<UTCTimestamp, ChartCandle>
+  private disposed = false
 
   constructor({
     element,
@@ -91,10 +92,11 @@ export class ChartController {
   }
 
   destroy() {
+    this.disposed = true
     this.indicatorSeries.removeAll()
     this.userPriceLines?.remove()
     this.userPriceLines = null
-    this.drawingSaveQueue.flush()
+    this.drawingSaveQueue.cancel()
     this.resizeObserver.disconnect()
     this.chart.unsubscribeCrosshairMove(this.handleCrosshairMove)
     this.chart.remove()
@@ -166,12 +168,14 @@ export class ChartController {
   }
 
   private scheduleDrawingSave(priceLines: Array<SavedPriceLine>) {
-    this.hydratedDrawingKey = this.drawingState
-      ? buildDrawingStateKey({
-          symbol: this.drawingState.symbol,
-          priceLines,
-        })
-      : JSON.stringify(priceLines)
+    if (this.disposed || !this.drawingState) {
+      return
+    }
+
+    this.hydratedDrawingKey = buildDrawingStateKey({
+      symbol: this.drawingState.symbol,
+      priceLines,
+    })
     this.drawingSaveQueue.schedule(priceLines)
   }
 }

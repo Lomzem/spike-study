@@ -8,7 +8,15 @@ export function buildDrawingStateKey(drawings: ChartDrawingState | null) {
     return null
   }
 
-  return `${drawings.symbol}:${JSON.stringify(drawings.priceLines)}`
+  const stablePriceLines = drawings.priceLines.map((priceLine) => [
+    priceLine.id,
+    priceLine.price,
+    priceLine.color,
+    priceLine.lineWidth,
+    priceLine.lineStyle,
+  ])
+
+  return `${drawings.symbol}:${JSON.stringify(stablePriceLines)}`
 }
 
 export class DrawingSaveQueue {
@@ -45,6 +53,15 @@ export class DrawingSaveQueue {
     this.saveTimeout = null
     this.pendingPriceLines = null
     this.onFlush?.(priceLines)
+  }
+
+  cancel() {
+    if (this.saveTimeout !== null) {
+      window.clearTimeout(this.saveTimeout)
+    }
+
+    this.saveTimeout = null
+    this.pendingPriceLines = null
   }
 }
 

@@ -1,3 +1,3 @@
 export function buildChartDateHref(symbol: string, date: string) {
-  return `/chart/${encodeURIComponent(symbol)}/${date}`
+  return `/chart/${encodeURIComponent(symbol)}/${encodeURIComponent(date)}`
 }

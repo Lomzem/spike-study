@@ -7,10 +7,9 @@ import type {
 
 export function createChartPageState(getData: () => ChartPageData) {
   const drawingPersistence = createChartDrawingPersistence(getData)
+  const candles = $derived(getData().candles)
 
-  let activeCandle = $state<ChartCandle | null>(
-    getData().candles.at(-1) ?? null,
-  )
+  let activeCandle = $derived<ChartCandle | null>(candles.at(-1) ?? null)
   let showSma = $state(false)
   let showEma = $state(false)
   let showVwap = $state(false)

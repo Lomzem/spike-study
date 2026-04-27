@@ -1,5 +1,6 @@
 <script lang="ts">
   import './layout.css'
+  import { env as publicEnv } from '$env/dynamic/public'
   import favicon from '$lib/assets/favicon.svg'
   import AppHeader from '$lib/components/app/app-header.svelte'
   import ConvexShell from '$lib/client/convex-shell.svelte'
@@ -7,15 +8,8 @@
   import { page } from '$app/state'
   import { ClerkProvider } from 'svelte-clerk'
 
-  const clerkPublishableKey =
-    import.meta.env.PUBLIC_CLERK_PUBLISHABLE_KEY ??
-    import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-  if (!clerkPublishableKey) {
-    throw new Error(
-      'PUBLIC_CLERK_PUBLISHABLE_KEY or VITE_CLERK_PUBLISHABLE_KEY is not set',
-    )
-  }
+  const clerkPublishableKey = publicEnv.PUBLIC_CLERK_PUBLISHABLE_KEY ?? ''
+  const hasClerkConfig = clerkPublishableKey.length > 0
 
   let { children }: LayoutProps = $props()
 
@@ -37,22 +31,38 @@
   <title>Spike Study</title>
 </svelte:head>
 
-<ClerkProvider
-  publishableKey={clerkPublishableKey}
-  signInUrl="/login"
-  signUpUrl="/login"
->
-  <ConvexShell>
-    <div
-      class="min-h-dvh bg-background text-foreground antialiased"
-      class:h-dvh={isFullscreenAppRoute}
-      class:overflow-hidden={isFullscreenAppRoute}
-    >
-      {#if !isPublicRoute}
-        <AppHeader {pathname} />
-      {/if}
+{#if hasClerkConfig}
+  <ClerkProvider
+    publishableKey={clerkPublishableKey}
+    signInUrl="/login"
+    signUpUrl="/login"
+  >
+    <ConvexShell>
+      <div
+        class="min-h-dvh bg-background text-foreground antialiased"
+        class:h-dvh={isFullscreenAppRoute}
+        class:overflow-hidden={isFullscreenAppRoute}
+      >
+        {#if !isPublicRoute}
+          <AppHeader {pathname} />
+        {/if}
 
-      {@render children()}
-    </div>
-  </ConvexShell>
-</ClerkProvider>
+        {@render children()}
+      </div>
+    </ConvexShell>
+  </ClerkProvider>
+{:else}
+  <main class="grid min-h-dvh place-items-center px-6 py-10">
+    <section class="w-full max-w-xl rounded-2xl border border-border/70 bg-card/80 p-8 shadow-sm backdrop-blur-sm">
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        Configuration Error
+      </p>
+      <h1 class="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+        Clerk is not configured
+      </h1>
+      <p class="mt-3 text-sm leading-6 text-muted-foreground">
+        Set <code>PUBLIC_CLERK_PUBLISHABLE_KEY</code> and reload the app.
+      </p>
+    </section>
+  </main>
+{/if}

@@ -3,6 +3,10 @@ import { eq, gte, lte } from 'drizzle-orm'
 import { dailyStocksTable } from '$lib/server/db/schema.js'
 import type { ScannerFilterValues } from './scanner-types'
 
+function isValidScannerDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
+
 function toFiniteNumber(value: string) {
   if (!value) {
     return undefined
@@ -17,11 +21,11 @@ export function buildScannerConditions(
 ): Array<SQL> {
   const conditions: Array<SQL> = [eq(dailyStocksTable.hasIntraday, true)]
 
-  if (filters.startDate) {
+  if (filters.startDate && isValidScannerDate(filters.startDate)) {
     conditions.push(gte(dailyStocksTable.date, filters.startDate))
   }
 
-  if (filters.endDate) {
+  if (filters.endDate && isValidScannerDate(filters.endDate)) {
     conditions.push(lte(dailyStocksTable.date, filters.endDate))
   }
 

@@ -1,3 +1,5 @@
+import { browser } from '$app/environment'
+import { env as publicEnv } from '$env/dynamic/public'
 import { useConvexClient, useQuery } from 'convex-svelte'
 import { useClerkContext } from 'svelte-clerk'
 import { fromStore } from 'svelte/store'
@@ -8,6 +10,15 @@ import type { SavedPriceLine } from './chart-drawing-types'
 import type { ChartDrawingState, ChartPageData } from './chart-types'
 
 export function createChartDrawingPersistence(getData: () => ChartPageData) {
+  if (!browser || !publicEnv.PUBLIC_CONVEX_URL) {
+    return {
+      get drawings() {
+        return null
+      },
+      async saveDrawings() {},
+    }
+  }
+
   const clerk = useClerkContext()
   const convex = useConvexClient()
   const convexAuthReady = fromStore(useConvexAuthReady())

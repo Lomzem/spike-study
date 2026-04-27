@@ -43,21 +43,25 @@ export const load: PageServerLoad = async ({ url }) => {
   }
 
   const whereClause = and(...buildScannerConditions(queryState.filters))
-  const [{ totalCount }] = await db
-    .select({ totalCount: count() })
-    .from(dailyStocksTable)
-    .where(whereClause)
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / queryState.pageSize))
-  const page = Math.min(queryState.page, totalPages)
-  const offset = (page - 1) * queryState.pageSize
+  try {
+    const [{ totalCount }] = await db
+      .select({ totalCount: count() })
+      .from(dailyStocksTable)
+      .where(whereClause)
 
-  const rows = queryState.sortBy
-    ? await db
-        .select()
-        .from(dailyStocksTable)
-        .where(whereClause)
-        .orderBy(
+    if (totalCount === 0) {
+      return {
+        ...shared,
+        totalCount,
+      } satisfies ScannerPageData
+    }
+
+    const totalPages = Math.max(1, Math.ceil(totalCount / queryState.pageSize))
+    const page = Math.min(queryState.page, totalPages)
+    const offset = (page - 1) * queryState.pageSize
+    const orderBy = queryState.sortBy
+      ? [
           queryState.sortDir === 'desc'
             ? desc(SORT_COLUMN_MAP[queryState.sortBy])
             : asc(SORT_COLUMN_MAP[queryState.sortBy]),
@@ -65,22 +69,29 @@ export const load: PageServerLoad = async ({ url }) => {
           ...(queryState.sortBy === 'symbol'
             ? []
             : [asc(SORT_COLUMN_MAP.symbol)]),
-        )
-        .limit(queryState.pageSize)
-        .offset(offset)
-    : await db
-        .select()
-        .from(dailyStocksTable)
-        .where(whereClause)
-        .orderBy(desc(SORT_COLUMN_MAP.date), asc(SORT_COLUMN_MAP.symbol))
-        .limit(queryState.pageSize)
-        .offset(offset)
+        ]
+      : [desc(SORT_COLUMN_MAP.date), asc(SORT_COLUMN_MAP.symbol)]
 
-  return {
-    ...shared,
-    rows,
-    totalCount,
-    page,
-    totalPages,
-  } satisfies ScannerPageData
+    const rows = await db
+      .select()
+      .from(dailyStocksTable)
+      .where(whereClause)
+      .orderBy(...orderBy)
+      .limit(queryState.pageSize)
+      .offset(offset)
+
+    return {
+      ...shared,
+      rows,
+      totalCount,
+      page,
+      totalPages,
+    } satisfies ScannerPageData
+  } catch (error) {
+    return {
+      ...shared,
+      dbError:
+        error instanceof Error ? error.message : 'Database query failed.',
+    } satisfies ScannerPageData
+  }
 }
