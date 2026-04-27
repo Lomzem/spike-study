@@ -18,8 +18,8 @@ When making design or implementation decisions, prioritize in this order:
 
 1. Maintainability
 2. Extensibility
-3. Human readability
-4. Feature correctness
+3. Feature correctness
+4. Human readability
 5. UI consistency with the chosen design direction
 6. Development speed
 

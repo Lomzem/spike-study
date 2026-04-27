@@ -113,11 +113,19 @@ async function insertDailyStocks({
  * and inserts the retrieved summaries into the database.
  */
 async function main() {
-  const targetDate = new Date(process.argv[process.argv.length - 1])
+  const args = process.argv.slice(2)
+  const positionalArgs = args.filter((arg) => !arg.startsWith('-'))
+
+  if (positionalArgs.length !== 1) {
+    console.error('Usage: fetchDailyStocks.ts <date>')
+    process.exit(1)
+  }
+
+  const targetDate = new Date(positionalArgs[0])
 
   if (isNaN(targetDate.getTime())) {
     console.error('Usage: fetchDailyStocks.ts <date>')
-    return
+    process.exit(1)
   }
 
   const data = await fetchDailyStocks(targetDate)

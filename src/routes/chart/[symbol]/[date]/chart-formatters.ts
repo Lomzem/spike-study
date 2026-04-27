@@ -11,13 +11,16 @@ export function formatVolume(value: number | null | undefined) {
     return '--'
   }
 
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
+  const absoluteValue = Math.abs(value)
+  const sign = value < 0 ? '-' : ''
+
+  if (absoluteValue >= 1_000_000) {
+    return `${sign}${(absoluteValue / 1_000_000).toFixed(2)}M`
   }
 
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`
+  if (absoluteValue >= 1_000) {
+    return `${sign}${(absoluteValue / 1_000).toFixed(1)}K`
   }
 
-  return value.toLocaleString()
+  return `${sign}${absoluteValue.toLocaleString('en-US')}`
 }

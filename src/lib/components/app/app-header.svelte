@@ -8,39 +8,33 @@
   let { pathname }: { pathname: string } = $props()
 
   const isScannerRoute = $derived(pathname === '/scanner')
-  const isChartRoute = $derived(pathname.startsWith('/chart'))
+  const isChartRoute = $derived(
+    pathname === '/chart' || pathname.startsWith('/chart/'),
+  )
 
-  const scannerLinkStyle = $derived(
+  const navLinkClass = $derived(
     isScannerRoute
-      ? 'color: #e8dcc8; background: rgba(139, 126, 106, 0.15);'
-      : 'color: #8b7e6a; background: transparent;',
+      ? 'bg-muted text-foreground'
+      : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground',
   )
 </script>
 
-<header
-  class="border-b backdrop-blur"
-  style="border-color: rgba(139, 126, 106, 0.15); background: rgba(26, 22, 16, 0.95);"
->
+<header class="border-b border-border/70 bg-background/95 backdrop-blur">
   <div class="flex h-12 items-center gap-3 px-4">
     <div class="h-7 w-1 rounded-full bg-primary"></div>
     <a
       href="/scanner"
       class="text-sm font-semibold uppercase tracking-[0.28em] text-primary"
-      style="font-family: 'Rubik', sans-serif;"
     >
       Spike Study
     </a>
 
-    <div
-      class="mx-2 hidden h-4 w-px sm:block"
-      style="background: rgba(139, 126, 106, 0.15);"
-    ></div>
+    <div class="mx-2 hidden h-4 w-px bg-border sm:block"></div>
 
     <nav class="flex items-center gap-1">
       <a
         href="/scanner"
-        class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition-colors"
-        style={scannerLinkStyle}
+        class={`rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition-colors ${navLinkClass}`}
       >
         Scanner
       </a>
@@ -48,15 +42,13 @@
       {#if isChartRoute}
         <a
           href={pathname}
-          class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] transition-colors"
-          style="color: #e8dcc8; background: rgba(139, 126, 106, 0.15);"
+          class="rounded bg-muted px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-foreground transition-colors"
         >
           Chart
         </a>
       {:else}
         <span
-          class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em]"
-          style="color: #8b7e6a;"
+          class="rounded px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
         >
           Chart
         </span>
@@ -65,10 +57,7 @@
 
     <div class="ml-auto flex h-8 w-8 items-center justify-center">
       <ClerkLoading>
-        <div
-          class="h-8 w-8 rounded-full"
-          style="background: rgba(139, 126, 106, 0.15);"
-        ></div>
+        <div class="h-8 w-8 rounded-full bg-muted"></div>
       </ClerkLoading>
       <ClerkLoaded>
         <UserButton />

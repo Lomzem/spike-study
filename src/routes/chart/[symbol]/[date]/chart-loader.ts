@@ -10,6 +10,7 @@ interface IntradayRow {
 }
 
 function toChartTimestamp(rawTime: number) {
+  // Values at or above 10^10 are millisecond timestamps.
   return Math.floor(rawTime >= 10_000_000_000 ? rawTime / 1000 : rawTime)
 }
 

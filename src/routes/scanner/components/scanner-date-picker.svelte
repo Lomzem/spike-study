@@ -18,10 +18,16 @@
     value: string
   } = $props()
 
-  let selectedDate = $derived<DateValue | undefined>(
-    value ? parseDate(value) : undefined,
-  )
+  let selectedDate = $state<DateValue | undefined>()
   const placeholderDate = $derived(selectedDate ?? today(getLocalTimeZone()))
+
+  $effect(() => {
+    const nextValue = value ? parseDate(value) : undefined
+
+    if (nextValue?.toString() !== selectedDate?.toString()) {
+      selectedDate = nextValue
+    }
+  })
 
   function handleValueChange(nextValue: DateValue | undefined) {
     selectedDate = nextValue

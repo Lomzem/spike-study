@@ -72,17 +72,20 @@ export class ChartIndicatorSeries {
       return
     }
 
-    if (!this.series[key]) {
-      this.series[key] = this.chart.addSeries(LineSeries, {
+    let series = this.series[key]
+
+    if (!series) {
+      series = this.chart.addSeries(LineSeries, {
         color,
         lineWidth,
         lineStyle,
         lastValueVisible: false,
         priceLineVisible: false,
       })
+      this.series[key] = series
     }
 
-    this.series[key].setData(data)
+    series.setData(data)
   }
 
   private removeSeries(key: IndicatorSeriesKey) {

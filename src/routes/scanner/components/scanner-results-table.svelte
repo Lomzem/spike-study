@@ -27,6 +27,22 @@
 
     return sortDir === 'asc' ? '▲' : '▼'
   }
+
+  function getAriaSort(column: SortableColumn) {
+    if (sortBy !== column) {
+      return 'none'
+    }
+
+    return sortDir === 'asc' ? 'ascending' : 'descending'
+  }
+
+  const NUMERIC_COLUMNS = new Set<SortableColumn>([
+    'open',
+    'close',
+    'volume',
+    'gap',
+    'change',
+  ])
 </script>
 
 <div class="min-h-0 flex-1 overflow-auto">
@@ -34,7 +50,10 @@
     <Table.Header class="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
       <Table.Row class="border-border/70">
         {#each ['symbol', 'date', 'open', 'close', 'volume', 'gap', 'change'] as column (column)}
-          <Table.Head class={column === 'open' || column === 'close' || column === 'volume' || column === 'gap' || column === 'change' ? '!text-right' : ''}>
+          <Table.Head
+            class={NUMERIC_COLUMNS.has(column as SortableColumn) ? '!text-right' : ''}
+            aria-sort={getAriaSort(column as SortableColumn)}
+          >
             <a
               class="inline-flex items-center gap-1 font-mono text-[0.6875rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
               href={buildSortHref(column as SortableColumn)}

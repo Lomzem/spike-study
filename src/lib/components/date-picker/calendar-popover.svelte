@@ -47,7 +47,13 @@
 
   function handleValueChange(nextValue: DateValue | undefined) {
     open = false
-    void onSelect?.(nextValue)
+
+    const result = onSelect?.(nextValue)
+    if (result) {
+      void result.catch((error) => {
+        console.error('Calendar selection handler failed', error)
+      })
+    }
   }
 </script>
 

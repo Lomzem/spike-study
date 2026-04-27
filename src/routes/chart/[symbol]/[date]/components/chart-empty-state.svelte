@@ -23,13 +23,21 @@
 
     <div class="mt-6 flex flex-wrap gap-2">
       {#if previousDate}
-        <Button href={buildChartDateHref(symbol, previousDate)} variant="outline">
-          {previousDate}
+        <Button
+          href={buildChartDateHref(symbol, previousDate)}
+          variant="outline"
+          aria-label={`Previous date ${previousDate}`}
+        >
+          Previous: {previousDate}
         </Button>
       {/if}
       {#if nextDate}
-        <Button href={buildChartDateHref(symbol, nextDate)} variant="outline">
-          {nextDate}
+        <Button
+          href={buildChartDateHref(symbol, nextDate)}
+          variant="outline"
+          aria-label={`Next date ${nextDate}`}
+        >
+          Next: {nextDate}
         </Button>
       {/if}
     </div>

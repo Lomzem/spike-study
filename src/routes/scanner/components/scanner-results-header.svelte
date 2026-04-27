@@ -46,8 +46,7 @@
         href={previousHref}
         variant="outline"
         size="icon-sm"
-        aria-disabled={previousDisabled}
-        class={previousDisabled ? 'pointer-events-none opacity-40' : ''}
+        disabled={previousDisabled}
       >
         <ChevronLeft size={14} />
       </Button>
@@ -55,8 +54,7 @@
         href={nextHref}
         variant="outline"
         size="icon-sm"
-        aria-disabled={nextDisabled}
-        class={nextDisabled ? 'pointer-events-none opacity-40' : ''}
+        disabled={nextDisabled}
       >
         <ChevronRight size={14} />
       </Button>

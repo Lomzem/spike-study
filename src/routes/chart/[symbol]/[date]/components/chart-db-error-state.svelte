@@ -2,6 +2,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
 
   let { message }: { message: string } = $props()
+  const normalizedMessage = $derived(message.replace(/[.!?]+$/, ''))
 </script>
 
 <div class="flex flex-1 items-center justify-center px-6 py-10">
@@ -15,7 +16,8 @@
       Chart is waiting for a database connection
     </h2>
     <p class="mt-3 text-sm leading-6 text-muted-foreground">
-      {message}. Set `DATABASE_URL` or `TURSO_DATABASE_URL` and reload the app.
+      {normalizedMessage}. Set <code>DATABASE_URL</code> or
+      <code>TURSO_DATABASE_URL</code> and reload the app.
     </p>
     <div class="mt-6">
       <Button href="/scanner" variant="outline">Back to scanner</Button>
