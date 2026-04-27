@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { ChartController } from '../chart-controller'
   import {
     cloneDrawingDefaults,
@@ -40,18 +41,18 @@
     onActiveCandleChange?: (candle: ChartCandle | null) => void
   } = $props()
 
-  let containerElement: HTMLDivElement
+  let containerElement: HTMLDivElement | null = null
   let controller: ChartController | null = null
 
-  let activeToolValue = $state('')
   let selectedDrawing = $state<SavedDrawing | null>(null)
   let currentDefaults = $derived.by(() => cloneDrawingDefaults(drawingDefaults))
-  let toolMenuCoords = $state({ x: 0, y: 0 })
   let drawingMenuCoords = $state({ x: 0, y: 0 })
-  let toolMenuOpen = $state(false)
+  let chartContextMenuCoords = $state({ x: 0, y: 0 })
   let drawingMenuOpen = $state(false)
+  let chartContextMenuOpen = $state(false)
   let lineDialogOpen = $state(false)
   let fibDialogOpen = $state(false)
+  let removeAllDialogOpen = $state(false)
   let lineDialogSession = $state(0)
   let fibDialogSession = $state(0)
   let lineDialogTitle = $state('Edit line')
@@ -61,10 +62,9 @@
   const selectedHorizontalDefaults = $derived(
     editingLine?.type === 'horizontal-line' ? currentDefaults.horizontalLine : currentDefaults.diagonalLine,
   )
-  const activeTool = $derived(
-    activeToolValue === '' ? null : (activeToolValue as DrawingToolType),
-  )
   const showDrawingMenu = $derived(drawingMenuOpen && selectedDrawing !== null)
+  const drawingCount = $derived(drawings?.drawings.length ?? 0)
+  const canRemoveAllDrawings = $derived(drawingCount > 0)
 
   $effect(() => {
     if (controller) {
@@ -126,6 +126,23 @@
     controller?.removeSelectedDrawing()
   }
 
+  function handleRemoveAllMenuClick(event: MouseEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!canRemoveAllDrawings) {
+      return
+    }
+
+    chartContextMenuOpen = false
+    removeAllDialogOpen = true
+  }
+
+  function handleRemoveAllConfirm() {
+    controller?.removeAllDrawings()
+    removeAllDialogOpen = false
+  }
+
   function handleLineConfirm(drawing: HorizontalLineDrawing | DiagonalLineDrawing) {
     controller?.updateSelectedDrawing(drawing)
     selectedDrawing = drawing
@@ -177,8 +194,7 @@
   }
 
   function setActiveToolValue(value: string) {
-    activeToolValue = value
-    toolMenuOpen = false
+    chartContextMenuOpen = false
     controller?.setActiveDrawingTool(
       value === '' ? null : (value as DrawingToolType),
     )
@@ -193,11 +209,11 @@
     setActiveToolValue(value)
   }
 
-  function getActiveToolValue() {
-    return activeToolValue
-  }
-
   function toLocalCoords(clientX: number, clientY: number) {
+    if (!containerElement) {
+      return { x: 0, y: 0 }
+    }
+
     const rect = containerElement.getBoundingClientRect()
     return {
       x: clientX - rect.left,
@@ -205,19 +221,23 @@
     }
   }
 
-  function openToolMenuAt(clientX: number, clientY: number) {
-    toolMenuCoords = toLocalCoords(clientX, clientY)
+  function attachContainer(node: HTMLDivElement) {
+    containerElement = node
+
+    return () => {
+      if (containerElement === node) {
+        containerElement = null
+      }
+    }
+  }
+
+  function openChartContextMenuAt(clientX: number, clientY: number) {
+    chartContextMenuCoords = toLocalCoords(clientX, clientY)
     drawingMenuOpen = false
-    toolMenuOpen = true
+    chartContextMenuOpen = true
   }
 
   function handleMouseDown(event: MouseEvent) {
-    if (event.button === 1) {
-      event.preventDefault()
-      openToolMenuAt(event.clientX, event.clientY)
-      return
-    }
-
     controller?.handleMouseDown(event)
   }
 
@@ -230,6 +250,10 @@
   }
 
   function handleClick(event: MouseEvent) {
+    if (event.button === 0 && chartContextMenuOpen) {
+      chartContextMenuOpen = false
+    }
+
     controller?.handleClick(event)
   }
 
@@ -238,14 +262,12 @@
     controller?.handleContextMenu(event)
   }
 
-  function handleAuxClick(event: MouseEvent) {
-    if (event.button === 1) {
-      event.preventDefault()
-      openToolMenuAt(event.clientX, event.clientY)
-    }
-  }
-
   function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Escape' && chartContextMenuOpen) {
+      chartContextMenuOpen = false
+      return
+    }
+
     controller?.handleKeyDown(event)
   }
 
@@ -254,13 +276,11 @@
     const onMouseMove = (event: MouseEvent) => handleMouseMove(event)
     const onClick = (event: MouseEvent) => handleClick(event)
     const onContextMenu = (event: MouseEvent) => handleContextMenu(event)
-    const onAuxClick = (event: MouseEvent) => handleAuxClick(event)
 
     node.addEventListener('mousedown', onMouseDown, true)
     node.addEventListener('mousemove', onMouseMove, true)
     node.addEventListener('click', onClick, true)
     node.addEventListener('contextmenu', onContextMenu, true)
-    node.addEventListener('auxclick', onAuxClick, true)
 
     queueMicrotask(() => {
       if (controller) {
@@ -275,15 +295,14 @@
         drawingDefaults: currentDefaults,
         onDrawingsChange,
         onActiveCandleChange,
-        onToolMenuRequest: (request) => {
-          toolMenuCoords = toLocalCoords(request.x, request.y)
-          drawingMenuOpen = false
-          toolMenuOpen = true
+        onChartContextMenuRequest: (request) => {
+          selectedDrawing = null
+          openChartContextMenuAt(request.x, request.y)
         },
         onDrawingMenuRequest: (request, drawing) => {
           selectedDrawing = drawing
           drawingMenuCoords = toLocalCoords(request.x, request.y)
-          toolMenuOpen = false
+          chartContextMenuOpen = false
           drawingMenuOpen = true
         },
         onSelectedDrawingChange: (drawing) => {
@@ -297,7 +316,6 @@
       node.removeEventListener('mousemove', onMouseMove, true)
       node.removeEventListener('click', onClick, true)
       node.removeEventListener('contextmenu', onContextMenu, true)
-      node.removeEventListener('auxclick', onAuxClick, true)
       controller?.destroy()
       controller = null
     }
@@ -310,38 +328,13 @@
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
-  bind:this={containerElement}
+  {@attach attachContainer}
   class="relative min-h-0 flex-1 self-stretch"
   role="application"
   aria-label="Price chart drawing area"
   tabindex="0"
   onkeydown={handleKeyDown}
 >
-  {#if toolMenuOpen}
-    <div
-      class="absolute z-50 w-52 overflow-hidden rounded-lg border border-border/70 bg-[#211b14]/96 p-1 shadow-md backdrop-blur-sm"
-      style={`left:${toolMenuCoords.x}px; top:${toolMenuCoords.y}px;`}
-    >
-      <div class="px-2 py-1.5 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-        Drawing Tool
-      </div>
-      <div class="my-1 h-px bg-border/70"></div>
-      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, 'horizontal-line')}>
-        Horizontal line
-      </button>
-      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, 'diagonal-line')}>
-        Diagonal line
-      </button>
-      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, 'fib-retracement')}>
-        Fib retracement
-      </button>
-      <div class="my-1 h-px bg-border/70"></div>
-      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, '')}>
-        Selection mode
-      </button>
-    </div>
-  {/if}
-
   {#if showDrawingMenu}
     <div
       class="absolute z-50 w-48 overflow-hidden rounded-lg border border-border/70 bg-[#211b14]/96 p-1 shadow-md backdrop-blur-sm"
@@ -356,8 +349,53 @@
     </div>
   {/if}
 
+  {#if chartContextMenuOpen}
+    <div
+      class="absolute z-50 w-52 overflow-hidden rounded-lg border border-border/70 bg-[#211b14]/96 p-1 shadow-md backdrop-blur-sm"
+      style={`left:${chartContextMenuCoords.x}px; top:${chartContextMenuCoords.y}px;`}
+    >
+      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, 'horizontal-line')}>
+        Horizontal line
+      </button>
+      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, 'diagonal-line')}>
+        Diagonal line
+      </button>
+      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, 'fib-retracement')}>
+        Fib retracement
+      </button>
+      <button class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground" onclick={(event) => handleToolMenuSelection(event, '')}>
+        Selection mode
+      </button>
+      <div class="my-1 h-px bg-border/70"></div>
+      <button
+        class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:bg-transparent"
+        disabled={!canRemoveAllDrawings}
+        onclick={handleRemoveAllMenuClick}
+      >
+        Remove all drawings
+      </button>
+    </div>
+  {/if}
+
   <div {@attach mountChart} class="min-h-0 h-full w-full"></div>
 </div>
+
+<AlertDialog.Root bind:open={removeAllDialogOpen}>
+  <AlertDialog.Content class="max-w-md gap-5 border border-border/70 bg-[#211b14]/96 p-5 text-foreground shadow-xl backdrop-blur-sm">
+    <AlertDialog.Header>
+      <AlertDialog.Title>Remove all drawings?</AlertDialog.Title>
+      <AlertDialog.Description class="text-muted-foreground">
+        This will permanently delete all saved drawings for this chart. This action cannot be undone.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer class="flex-col gap-2 border-0 bg-transparent p-0 sm:flex-row sm:justify-end">
+      <AlertDialog.Cancel type="button" variant="outline">Cancel</AlertDialog.Cancel>
+      <AlertDialog.Action type="button" variant="destructive" onclick={handleRemoveAllConfirm}>
+        Remove all
+      </AlertDialog.Action>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
 
 {#if editingLine}
   {#key lineDialogSession}

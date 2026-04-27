@@ -41,7 +41,7 @@ interface ChartDrawingsControllerOptions {
   drawings: Array<SavedDrawing>
   defaults: DrawingDefaults
   onChange?: (drawings: Array<SavedDrawing>) => void
-  onToolMenuRequest?: (request: ContextMenuRequest) => void
+  onChartContextMenuRequest?: (request: ContextMenuRequest) => void
   onDrawingMenuRequest?: (
     request: ContextMenuRequest,
     drawing: SavedDrawing,
@@ -168,7 +168,7 @@ export class ChartDrawingsController {
   private didDrag = false
   private disposed = false
   private onChange?: (drawings: Array<SavedDrawing>) => void
-  private onToolMenuRequest?: (request: ContextMenuRequest) => void
+  private onChartContextMenuRequest?: (request: ContextMenuRequest) => void
   private onDrawingMenuRequest?: (
     request: ContextMenuRequest,
     drawing: SavedDrawing,
@@ -183,7 +183,7 @@ export class ChartDrawingsController {
     this._drawings = options.drawings
     this.defaults = options.defaults
     this.onChange = options.onChange
-    this.onToolMenuRequest = options.onToolMenuRequest
+    this.onChartContextMenuRequest = options.onChartContextMenuRequest
     this.onDrawingMenuRequest = options.onDrawingMenuRequest
     this.onSelectionChange = options.onSelectionChange
     this.primitive = new DrawingsPrimitive(this)
@@ -255,6 +255,20 @@ export class ChartDrawingsController {
     this.onChange?.(this._drawings)
   }
 
+  removeAllDrawings() {
+    this._drawings = []
+    this.selectedId = null
+    this.pendingAnchors = []
+    this.draftCursorAnchor = null
+    this.draggingDrawingId = null
+    this.draggingAnchorIndex = null
+    this.didDrag = false
+    this.container.style.cursor = ''
+    this.primitive.requestRender()
+    this.onSelectionChange?.(null)
+    this.onChange?.(this._drawings)
+  }
+
   clearSelection() {
     this.selectedId = null
     this.primitive.requestRender()
@@ -285,12 +299,6 @@ export class ChartDrawingsController {
   }
 
   handleMouseDown(event: MouseEvent) {
-    if (event.button === 1) {
-      event.preventDefault()
-      this.onToolMenuRequest?.({ x: event.clientX, y: event.clientY })
-      return
-    }
-
     if (event.button !== 0) {
       return
     }
@@ -429,7 +437,8 @@ export class ChartDrawingsController {
 
     const hit = hitTestDrawings(viewport, point, this._drawings)
     if (!hit) {
-      this.onToolMenuRequest?.({ x: event.clientX, y: event.clientY })
+      this.clearSelection()
+      this.onChartContextMenuRequest?.({ x: event.clientX, y: event.clientY })
       return
     }
 

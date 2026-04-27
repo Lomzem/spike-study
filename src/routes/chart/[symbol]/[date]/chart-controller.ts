@@ -33,7 +33,7 @@ interface ChartControllerOptions {
   drawings?: ChartDrawingState
   drawingDefaults?: DrawingDefaults
   onDrawingsChange?: (drawings: Array<SavedDrawing>) => void
-  onToolMenuRequest?: (request: { x: number; y: number }) => void
+  onChartContextMenuRequest?: (request: { x: number; y: number }) => void
   onDrawingMenuRequest?: (
     request: { x: number; y: number },
     drawing: SavedDrawing,
@@ -58,7 +58,10 @@ export class ChartController {
   private onActiveCandleChange?: (candle: ChartCandle | null) => void
   private candleLookup: Map<UTCTimestamp, ChartCandle>
   private disposed = false
-  private onToolMenuRequest?: (request: { x: number; y: number }) => void
+  private onChartContextMenuRequest?: (request: {
+    x: number
+    y: number
+  }) => void
   private onDrawingMenuRequest?: (
     request: { x: number; y: number },
     drawing: SavedDrawing,
@@ -73,7 +76,7 @@ export class ChartController {
     drawings,
     drawingDefaults,
     onDrawingsChange,
-    onToolMenuRequest,
+    onChartContextMenuRequest,
     onDrawingMenuRequest,
     onSelectedDrawingChange,
   }: ChartControllerOptions) {
@@ -88,7 +91,7 @@ export class ChartController {
       drawingDefaults ?? structuredClone(DEFAULT_DRAWING_DEFAULTS)
     this.onDrawingsChange = onDrawingsChange
     this.onActiveCandleChange = onActiveCandleChange
-    this.onToolMenuRequest = onToolMenuRequest
+    this.onChartContextMenuRequest = onChartContextMenuRequest
     this.onDrawingMenuRequest = onDrawingMenuRequest
     this.onSelectedDrawingChange = onSelectedDrawingChange
     this.drawingSaveQueue = new DrawingSaveQueue((drawingsToSave) => {
@@ -210,6 +213,10 @@ export class ChartController {
     this.drawingsController?.removeSelectedDrawing()
   }
 
+  removeAllDrawings() {
+    this.drawingsController?.removeAllDrawings()
+  }
+
   clearSelectedDrawing() {
     this.drawingsController?.clearSelection()
   }
@@ -238,7 +245,7 @@ export class ChartController {
         drawings: this.drawingState?.drawings ?? [],
         defaults: this.drawingDefaults,
         onChange: (drawings) => this.scheduleDrawingSave(drawings),
-        onToolMenuRequest: this.onToolMenuRequest,
+        onChartContextMenuRequest: this.onChartContextMenuRequest,
         onDrawingMenuRequest: this.onDrawingMenuRequest,
         onSelectionChange: this.onSelectedDrawingChange,
       },
