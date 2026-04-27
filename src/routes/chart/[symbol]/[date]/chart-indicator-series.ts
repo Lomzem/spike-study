@@ -17,21 +17,34 @@ const VWAP_COLOR = '#c084fc'
 const VWAP_LINE_STYLE: 0 | 1 | 2 | 3 | 4 = 2
 
 interface IndicatorSeriesState {
-  smaSeries: ISeriesApi<'Line'> | null
-  emaSeries: ISeriesApi<'Line'> | null
-  vwapSeries: ISeriesApi<'Line'> | null
+  smaSeries: ISeriesApi<'Line'>
+  emaSeries: ISeriesApi<'Line'>
+  vwapSeries: ISeriesApi<'Line'>
 }
 
 export class ChartIndicatorSeries {
   private chart: IChartApi
-  private series: IndicatorSeriesState = {
-    smaSeries: null,
-    emaSeries: null,
-    vwapSeries: null,
-  }
+  private series: IndicatorSeriesState
 
   constructor(chart: IChartApi) {
     this.chart = chart
+    this.series = {
+      smaSeries: this.createLineSeries(
+        SMA_COLOR,
+        DEFAULT_LINE_WIDTH,
+        undefined,
+      ),
+      emaSeries: this.createLineSeries(
+        EMA_COLOR,
+        DEFAULT_LINE_WIDTH,
+        undefined,
+      ),
+      vwapSeries: this.createLineSeries(
+        VWAP_COLOR,
+        DEFAULT_LINE_WIDTH,
+        VWAP_LINE_STYLE,
+      ),
+    }
   }
 
   sync(indicators: ChartIndicatorState, candles: Array<ChartCandle>) {
@@ -62,9 +75,9 @@ export class ChartIndicatorSeries {
   }
 
   removeAll() {
-    this.removeSeries('smaSeries')
-    this.removeSeries('emaSeries')
-    this.removeSeries('vwapSeries')
+    this.chart.removeSeries(this.series.smaSeries)
+    this.chart.removeSeries(this.series.emaSeries)
+    this.chart.removeSeries(this.series.vwapSeries)
   }
 
   private syncLineSeries(
@@ -75,35 +88,25 @@ export class ChartIndicatorSeries {
     lineStyle: 0 | 1 | 2 | 3 | 4 | undefined,
     data: Parameters<ISeriesApi<'Line'>['setData']>[0],
   ) {
-    if (!enabled) {
-      this.removeSeries(key)
-      return
-    }
+    const series = this.series[key]
 
-    let series = this.series[key]
-
-    if (!series) {
-      series = this.chart.addSeries(LineSeries, {
-        color,
-        lineWidth,
-        lineStyle,
-        lastValueVisible: false,
-        priceLineVisible: false,
-      })
-      this.series[key] = series
-    }
-
-    series.applyOptions({ color, lineWidth, lineStyle })
+    series.applyOptions({ color, lineWidth, lineStyle, visible: enabled })
 
     series.setData(data)
   }
 
-  private removeSeries(key: IndicatorSeriesKey) {
-    if (!this.series[key]) {
-      return
-    }
-
-    this.chart.removeSeries(this.series[key])
-    this.series[key] = null
+  private createLineSeries(
+    color: string,
+    lineWidth: 1 | 2 | 3 | 4,
+    lineStyle: 0 | 1 | 2 | 3 | 4 | undefined,
+  ) {
+    return this.chart.addSeries(LineSeries, {
+      color,
+      lineWidth,
+      lineStyle,
+      visible: false,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    })
   }
 }

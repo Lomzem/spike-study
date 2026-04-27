@@ -87,6 +87,9 @@ export function createChartView(element: HTMLElement): ChartView {
 export function setChartViewData(view: ChartView, candles: Array<ChartCandle>) {
   view.candlestickSeries.setData(toCandlestickData(candles))
   view.volumeSeries.setData(toVolumeData(candles))
+}
+
+export function fitChartViewContent(view: ChartView) {
   view.chart.timeScale().fitContent()
 }
 

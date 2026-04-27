@@ -17,7 +17,11 @@ import type {
 } from './chart-types'
 import type { SavedPriceLine } from './chart-drawing-types'
 import { UserPriceLines } from './chart-user-price-lines'
-import { createChartView, setChartViewData } from './chart-view'
+import {
+  createChartView,
+  fitChartViewContent,
+  setChartViewData,
+} from './chart-view'
 
 interface ChartControllerOptions {
   element: HTMLElement
@@ -73,6 +77,7 @@ export class ChartController {
     this.volumeSeries = chartView.volumeSeries
     this.indicatorSeries = new ChartIndicatorSeries(this.chart)
     setChartViewData(chartView, candles)
+    fitChartViewContent(chartView)
     this.onActiveCandleChange?.(candles.at(-1) ?? null)
     this.syncIndicators()
     this.syncDrawings()
@@ -107,6 +112,10 @@ export class ChartController {
   }
 
   set candles(candles: Array<ChartCandle>) {
+    if (candles === this.candleData) {
+      return
+    }
+
     this.candleData = candles
     this.candleLookup = new Map(candles.map((candle) => [candle.time, candle]))
     setChartViewData(
