@@ -1,4 +1,4 @@
-import { createChartDrawingPersistence } from './chart-drawing-persistence.svelte'
+import { createDrawingPersistence } from './drawings/persistence.svelte'
 import type {
   ChartCandle,
   ChartIndicatorState,
@@ -6,7 +6,7 @@ import type {
 } from './chart-types'
 
 export function createChartPageState(getData: () => ChartPageData) {
-  const drawingPersistence = createChartDrawingPersistence(getData)
+  const drawingPersistence = createDrawingPersistence(getData)
   const candles = $derived(getData().candles)
 
   let activeCandle = $derived<ChartCandle | null>(candles.at(-1) ?? null)
@@ -44,6 +44,9 @@ export function createChartPageState(getData: () => ChartPageData) {
     get drawings() {
       return drawingPersistence.drawings
     },
+    get drawingDefaults() {
+      return drawingPersistence.defaults
+    },
     get indicators() {
       return indicators
     },
@@ -53,6 +56,7 @@ export function createChartPageState(getData: () => ChartPageData) {
     get previousDate() {
       return previousDate
     },
+    saveDefaults: drawingPersistence.saveDefaults,
     saveDrawings: drawingPersistence.saveDrawings,
     setActiveCandle,
     get showEma() {

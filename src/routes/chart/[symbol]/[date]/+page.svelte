@@ -50,6 +50,8 @@
         candles={data.candles}
         indicators={chartPage.indicators}
         drawings={chartPage.drawings}
+        drawingDefaults={chartPage.drawingDefaults}
+        onDefaultsChange={chartPage.saveDefaults}
         onDrawingsChange={chartPage.saveDrawings}
         onActiveCandleChange={chartPage.setActiveCandle}
       />

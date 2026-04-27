@@ -2,34 +2,95 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
-const priceLineValidator = v.object({
-  id: v.string(),
+const lineWidthValidator = v.union(
+  v.literal(1),
+  v.literal(2),
+  v.literal(3),
+  v.literal(4),
+)
+const lineStyleValidator = v.union(
+  v.literal(0),
+  v.literal(1),
+  v.literal(2),
+  v.literal(3),
+  v.literal(4),
+)
+const timeValidator = v.union(
+  v.number(),
+  v.string(),
+  v.object({ year: v.number(), month: v.number(), day: v.number() }),
+)
+const anchorValidator = v.object({
+  time: timeValidator,
   price: v.number(),
+})
+const fibLevelValidator = v.object({
+  id: v.string(),
+  value: v.number(),
   color: v.string(),
-  lineWidth: v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
-  lineStyle: v.union(
-    v.literal(0),
-    v.literal(1),
-    v.literal(2),
-    v.literal(3),
-    v.literal(4),
-  ),
+  visible: v.boolean(),
 })
 
-const MAX_PRICE_LINES = 250
+const savedDrawingValidator = v.union(
+  v.object({
+    id: v.string(),
+    type: v.literal('horizontal-line'),
+    anchors: v.array(anchorValidator),
+    color: v.string(),
+    lineWidth: lineWidthValidator,
+    lineStyle: lineStyleValidator,
+    extendLeft: v.boolean(),
+    extendRight: v.boolean(),
+  }),
+  v.object({
+    id: v.string(),
+    type: v.literal('diagonal-line'),
+    anchors: v.array(anchorValidator),
+    color: v.string(),
+    lineWidth: lineWidthValidator,
+    lineStyle: lineStyleValidator,
+    extendLeft: v.boolean(),
+    extendRight: v.boolean(),
+  }),
+  v.object({
+    id: v.string(),
+    type: v.literal('fib-retracement'),
+    anchors: v.array(anchorValidator),
+    color: v.string(),
+    lineWidth: lineWidthValidator,
+    lineStyle: lineStyleValidator,
+    extendLeft: v.boolean(),
+    extendRight: v.boolean(),
+    showPrices: v.boolean(),
+    showPercentages: v.boolean(),
+    levels: v.array(fibLevelValidator),
+  }),
+)
 
-function normalizeSavedLineWidth(lineWidth: number): 1 | 2 | 3 | 4 {
-  if (
-    lineWidth === 1 ||
-    lineWidth === 2 ||
-    lineWidth === 3 ||
-    lineWidth === 4
-  ) {
-    return lineWidth
-  }
+const lineDefaultsValidator = v.object({
+  color: v.string(),
+  lineWidth: lineWidthValidator,
+  lineStyle: lineStyleValidator,
+  extendLeft: v.boolean(),
+  extendRight: v.boolean(),
+})
 
-  return 1
-}
+const fibDefaultsValidator = v.object({
+  color: v.string(),
+  lineWidth: lineWidthValidator,
+  lineStyle: lineStyleValidator,
+  extendLeft: v.boolean(),
+  extendRight: v.boolean(),
+  showPrices: v.boolean(),
+  showPercentages: v.boolean(),
+  levels: v.array(fibLevelValidator),
+})
+
+const drawingDefaultsValidator = v.object({
+  horizontalLine: lineDefaultsValidator,
+  diagonalLine: lineDefaultsValidator,
+  fibRetracement: fibDefaultsValidator,
+})
 
 async function getAuthenticatedIdentity(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity()
@@ -44,104 +105,12 @@ function normalizeSymbol(symbol: string) {
   return symbol.trim().toUpperCase()
 }
 
-function isValidLineWidth(lineWidth: number) {
-  return (
-    Number.isFinite(lineWidth) &&
-    Number.isInteger(lineWidth) &&
-    (lineWidth === 1 || lineWidth === 2 || lineWidth === 3 || lineWidth === 4)
-  )
-}
-
-function isValidPrice(price: number) {
-  return Number.isFinite(price)
-}
-
-function validatePriceLines(
-  priceLines: Array<{
-    id: string
-    price: number
-    color: string
-    lineWidth: number
-    lineStyle: 0 | 1 | 2 | 3 | 4
-  }>,
-) {
-  const seenLineIds = new Set<string>()
-
-  for (const priceLine of priceLines) {
-    if (seenLineIds.has(priceLine.id)) {
-      throw new Error(`Duplicate price line id: ${priceLine.id}`)
-    }
-    seenLineIds.add(priceLine.id)
-
-    if (!isValidPrice(priceLine.price)) {
-      throw new Error(`Invalid price for line ${priceLine.id}`)
-    }
-
-    if (!isValidLineWidth(priceLine.lineWidth)) {
-      throw new Error(`Invalid line width for line ${priceLine.id}`)
-    }
-  }
-}
-
-const savedPriceLineArrayValidator = v.array(priceLineValidator)
-
-function toSavedPriceLine(priceLine: {
-  lineId: string
-  price: number
-  color: string
-  lineWidth: number
-  lineStyle: 0 | 1 | 2 | 3 | 4
-}) {
-  return {
-    id: priceLine.lineId,
-    price: priceLine.price,
-    color: priceLine.color,
-    lineWidth: normalizeSavedLineWidth(priceLine.lineWidth),
-    lineStyle: priceLine.lineStyle,
-  }
-}
-
-async function getOrCreateUserDrawing(
-  ctx: MutationCtx,
-  clerkUserId: string,
-  symbol: string,
-) {
-  const existing = await ctx.db
-    .query('userDrawings')
-    .withIndex('by_clerkUserId_and_symbol', (q) =>
-      q.eq('clerkUserId', clerkUserId).eq('symbol', symbol),
-    )
-    .unique()
-
-  if (existing) {
-    return existing
-  }
-
-  const now = Date.now()
-  const userDrawingId = await ctx.db.insert('userDrawings', {
-    clerkUserId,
-    symbol,
-    updatedAt: now,
-  })
-
-  const created = await ctx.db.get(userDrawingId)
-
-  if (!created) {
-    throw new Error('Failed to create drawing state')
-  }
-
-  return created
-}
-
 export const getForSymbol = query({
-  args: {
-    symbol: v.string(),
-  },
-  returns: v.union(v.null(), savedPriceLineArrayValidator),
+  args: { symbol: v.string() },
+  returns: v.union(v.null(), v.array(savedDrawingValidator)),
   handler: async (ctx, args) => {
     const clerkUserId = await getAuthenticatedIdentity(ctx)
     const symbol = normalizeSymbol(args.symbol)
-
     const drawing = await ctx.db
       .query('userDrawings')
       .withIndex('by_clerkUserId_and_symbol', (q) =>
@@ -149,82 +118,90 @@ export const getForSymbol = query({
       )
       .unique()
 
-    if (!drawing) {
-      return null
-    }
-
-    const priceLines = await ctx.db
-      .query('priceLines')
-      .withIndex('by_userDrawingId', (q) => q.eq('userDrawingId', drawing._id))
-      .take(MAX_PRICE_LINES)
-
-    return priceLines
-      .sort((left, right) => left.sortOrder - right.sortOrder)
-      .map(toSavedPriceLine)
+    return drawing?.drawings ?? null
   },
 })
 
 export const saveForSymbol = mutation({
   args: {
     symbol: v.string(),
-    priceLines: savedPriceLineArrayValidator,
+    drawings: v.array(savedDrawingValidator),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const clerkUserId = await getAuthenticatedIdentity(ctx)
     const symbol = normalizeSymbol(args.symbol)
-
-    if (args.priceLines.length > MAX_PRICE_LINES) {
-      throw new Error(`Too many price lines. Maximum is ${MAX_PRICE_LINES}.`)
-    }
-
-    validatePriceLines(args.priceLines)
-
-    const drawingDoc = await getOrCreateUserDrawing(ctx, clerkUserId, symbol)
-    const existingPriceLines = await ctx.db
-      .query('priceLines')
-      .withIndex('by_userDrawingId', (q) =>
-        q.eq('userDrawingId', drawingDoc._id),
+    const existing = await ctx.db
+      .query('userDrawings')
+      .withIndex('by_clerkUserId_and_symbol', (q) =>
+        q.eq('clerkUserId', clerkUserId).eq('symbol', symbol),
       )
-      .collect()
+      .unique()
 
-    const updatedAt = Date.now()
-
-    const existingByLineId = new Map(
-      existingPriceLines.map((priceLine) => [priceLine.lineId, priceLine]),
-    )
-    const nextLineIds = new Set(
-      args.priceLines.map((priceLine) => priceLine.id),
-    )
-
-    for (const priceLine of existingPriceLines) {
-      if (!nextLineIds.has(priceLine.lineId)) {
-        await ctx.db.delete(priceLine._id)
-      }
+    const value = {
+      clerkUserId,
+      symbol,
+      drawings: args.drawings,
+      updatedAt: Date.now(),
     }
 
-    for (const [sortOrder, priceLine] of args.priceLines.entries()) {
-      const existingPriceLine = existingByLineId.get(priceLine.id)
-      const value = {
-        userDrawingId: drawingDoc._id,
-        lineId: priceLine.id,
-        price: priceLine.price,
-        color: priceLine.color,
-        lineWidth: priceLine.lineWidth,
-        lineStyle: priceLine.lineStyle,
-        sortOrder,
-      }
-
-      if (existingPriceLine) {
-        await ctx.db.patch(existingPriceLine._id, value)
-      } else {
-        await ctx.db.insert('priceLines', value)
-      }
+    if (existing) {
+      await ctx.db.patch(existing._id, value)
+    } else {
+      await ctx.db.insert('userDrawings', value)
     }
 
-    await ctx.db.patch(drawingDoc._id, {
-      updatedAt,
-    })
+    return null
+  },
+})
+
+export const getDefaults = query({
+  args: {},
+  returns: v.union(v.null(), drawingDefaultsValidator),
+  handler: async (ctx) => {
+    const clerkUserId = await getAuthenticatedIdentity(ctx)
+    const defaults = await ctx.db
+      .query('userDrawingDefaults')
+      .withIndex('by_clerkUserId', (q) => q.eq('clerkUserId', clerkUserId))
+      .unique()
+
+    if (!defaults) {
+      return null
+    }
+
+    return {
+      horizontalLine: defaults.horizontalLine,
+      diagonalLine: defaults.diagonalLine,
+      fibRetracement: defaults.fibRetracement,
+    }
+  },
+})
+
+export const saveDefaults = mutation({
+  args: {
+    defaults: drawingDefaultsValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const clerkUserId = await getAuthenticatedIdentity(ctx)
+    const existing = await ctx.db
+      .query('userDrawingDefaults')
+      .withIndex('by_clerkUserId', (q) => q.eq('clerkUserId', clerkUserId))
+      .unique()
+
+    const value = {
+      clerkUserId,
+      horizontalLine: args.defaults.horizontalLine,
+      diagonalLine: args.defaults.diagonalLine,
+      fibRetracement: args.defaults.fibRetracement,
+      updatedAt: Date.now(),
+    }
+
+    if (existing) {
+      await ctx.db.patch(existing._id, value)
+    } else {
+      await ctx.db.insert('userDrawingDefaults', value)
+    }
 
     return null
   },

@@ -5,18 +5,20 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts'
 import { ChartIndicatorSeries } from './chart-indicator-series'
-import {
-  DrawingSaveQueue,
-  buildDrawingStateKey,
-  createUserPriceLines,
-} from './chart-drawing-sync'
+import { ChartDrawingsController } from './drawings/controller'
+import { DEFAULT_DRAWING_DEFAULTS } from './drawings/defaults'
+import { DrawingSaveQueue } from './drawings/save-queue'
+import { buildDrawingStateKey } from './drawings/state-key'
+import type {
+  DrawingDefaults,
+  DrawingToolType,
+  SavedDrawing,
+} from './drawings/types'
 import type {
   ChartCandle,
   ChartDrawingState,
   ChartIndicatorState,
 } from './chart-types'
-import type { SavedPriceLine } from './chart-drawing-types'
-import { UserPriceLines } from './chart-user-price-lines'
 import {
   createChartView,
   fitChartViewContent,
@@ -29,7 +31,14 @@ interface ChartControllerOptions {
   onActiveCandleChange?: (candle: ChartCandle | null) => void
   indicators?: ChartIndicatorState
   drawings?: ChartDrawingState
-  onDrawingsChange?: (priceLines: Array<SavedPriceLine>) => void
+  drawingDefaults?: DrawingDefaults
+  onDrawingsChange?: (drawings: Array<SavedDrawing>) => void
+  onToolMenuRequest?: (request: { x: number; y: number }) => void
+  onDrawingMenuRequest?: (
+    request: { x: number; y: number },
+    drawing: SavedDrawing,
+  ) => void
+  onSelectedDrawingChange?: (drawing: SavedDrawing | null) => void
 }
 
 export class ChartController {
@@ -37,17 +46,24 @@ export class ChartController {
   private candlestickSeries: ISeriesApi<'Candlestick'>
   private volumeSeries: ISeriesApi<'Histogram'>
   private indicatorSeries: ChartIndicatorSeries
-  private userPriceLines: UserPriceLines | null = null
+  private drawingsController: ChartDrawingsController | null = null
   private resizeObserver: ResizeObserver
   private candleData: Array<ChartCandle>
   private indicatorState: ChartIndicatorState
   private drawingState: ChartDrawingState | null
-  private onDrawingsChange?: (priceLines: Array<SavedPriceLine>) => void
+  private drawingDefaults: DrawingDefaults
+  private onDrawingsChange?: (drawings: Array<SavedDrawing>) => void
   private drawingSaveQueue: DrawingSaveQueue
   private hydratedDrawingKey: string | null = null
   private onActiveCandleChange?: (candle: ChartCandle | null) => void
   private candleLookup: Map<UTCTimestamp, ChartCandle>
   private disposed = false
+  private onToolMenuRequest?: (request: { x: number; y: number }) => void
+  private onDrawingMenuRequest?: (
+    request: { x: number; y: number },
+    drawing: SavedDrawing,
+  ) => void
+  private onSelectedDrawingChange?: (drawing: SavedDrawing | null) => void
 
   constructor({
     element,
@@ -55,7 +71,11 @@ export class ChartController {
     onActiveCandleChange,
     indicators,
     drawings,
+    drawingDefaults,
     onDrawingsChange,
+    onToolMenuRequest,
+    onDrawingMenuRequest,
+    onSelectedDrawingChange,
   }: ChartControllerOptions) {
     this.candleData = candles
     this.indicatorState = indicators ?? {
@@ -64,10 +84,15 @@ export class ChartController {
       showVwap: false,
     }
     this.drawingState = drawings ?? null
+    this.drawingDefaults =
+      drawingDefaults ?? structuredClone(DEFAULT_DRAWING_DEFAULTS)
     this.onDrawingsChange = onDrawingsChange
     this.onActiveCandleChange = onActiveCandleChange
-    this.drawingSaveQueue = new DrawingSaveQueue((priceLines) => {
-      this.onDrawingsChange?.(priceLines)
+    this.onToolMenuRequest = onToolMenuRequest
+    this.onDrawingMenuRequest = onDrawingMenuRequest
+    this.onSelectedDrawingChange = onSelectedDrawingChange
+    this.drawingSaveQueue = new DrawingSaveQueue((drawingsToSave) => {
+      this.onDrawingsChange?.(drawingsToSave)
     })
     this.candleLookup = new Map(candles.map((candle) => [candle.time, candle]))
 
@@ -80,7 +105,7 @@ export class ChartController {
     fitChartViewContent(chartView)
     this.onActiveCandleChange?.(candles.at(-1) ?? null)
     this.syncIndicators()
-    this.syncDrawings()
+    this.syncDrawings(element)
 
     this.chart.subscribeCrosshairMove(this.handleCrosshairMove)
 
@@ -96,6 +121,10 @@ export class ChartController {
     this.resizeObserver.observe(element)
   }
 
+  get selectedDrawing() {
+    return this.drawingsController?.selectedDrawing ?? null
+  }
+
   destroy() {
     if (this.disposed) {
       return
@@ -103,8 +132,8 @@ export class ChartController {
 
     this.disposed = true
     this.indicatorSeries?.removeAll()
-    this.userPriceLines?.remove()
-    this.userPriceLines = null
+    this.drawingsController?.destroy()
+    this.drawingsController = null
     this.drawingSaveQueue?.cancel()
     this.resizeObserver?.disconnect()
     this.chart?.unsubscribeCrosshairMove(this.handleCrosshairMove)
@@ -128,7 +157,6 @@ export class ChartController {
     )
     this.onActiveCandleChange?.(candles.at(-1) ?? null)
     this.syncIndicators()
-    this.syncDrawings()
   }
 
   set indicators(indicators: ChartIndicatorState) {
@@ -138,7 +166,52 @@ export class ChartController {
 
   set drawings(drawings: ChartDrawingState | null) {
     this.drawingState = drawings
-    this.syncDrawings()
+    this.syncDrawingState()
+  }
+
+  set defaults(defaults: DrawingDefaults) {
+    this.drawingDefaults = defaults
+    this.drawingsController?.setDefaults(defaults)
+  }
+
+  setActiveDrawingTool(tool: DrawingToolType | null) {
+    this.drawingsController?.setActiveTool(tool)
+  }
+
+  handleMouseDown(event: MouseEvent) {
+    this.drawingsController?.handleMouseDown(event)
+  }
+
+  handleMouseMove(event: MouseEvent) {
+    this.drawingsController?.handleMouseMove(event)
+  }
+
+  handleMouseUp() {
+    this.drawingsController?.handleMouseUp()
+  }
+
+  handleClick(event: MouseEvent) {
+    this.drawingsController?.handleClick(event)
+  }
+
+  handleContextMenu(event: MouseEvent) {
+    this.drawingsController?.handleContextMenu(event)
+  }
+
+  handleKeyDown(event: KeyboardEvent) {
+    this.drawingsController?.handleKeyDown(event)
+  }
+
+  updateSelectedDrawing(drawing: SavedDrawing) {
+    this.drawingsController?.updateSelectedDrawing(drawing)
+  }
+
+  removeSelectedDrawing() {
+    this.drawingsController?.removeSelectedDrawing()
+  }
+
+  clearSelectedDrawing() {
+    this.drawingsController?.clearSelection()
   }
 
   private handleCrosshairMove = (param: MouseEventParams) => {
@@ -156,40 +229,55 @@ export class ChartController {
     this.indicatorSeries.sync(this.indicatorState, this.candleData)
   }
 
-  private syncDrawings() {
+  private syncDrawings(element: HTMLElement) {
+    this.drawingsController = new ChartDrawingsController(
+      this.chart,
+      this.candlestickSeries,
+      element,
+      {
+        drawings: this.drawingState?.drawings ?? [],
+        defaults: this.drawingDefaults,
+        onChange: (drawings) => this.scheduleDrawingSave(drawings),
+        onToolMenuRequest: this.onToolMenuRequest,
+        onDrawingMenuRequest: this.onDrawingMenuRequest,
+        onSelectionChange: this.onSelectedDrawingChange,
+      },
+    )
+    this.syncDrawingState()
+  }
+
+  private syncDrawingState() {
+    if (!this.drawingsController) {
+      return
+    }
+
     if (!this.drawingState) {
-      this.userPriceLines?.remove()
-      this.userPriceLines = null
+      this.drawingsController.setDrawings([])
       this.hydratedDrawingKey = null
       return
     }
 
-    if (!this.userPriceLines) {
-      this.userPriceLines = createUserPriceLines(
-        this.chart,
-        this.candlestickSeries,
-        (priceLines) => this.scheduleDrawingSave(priceLines),
-      )
-    }
-
-    const drawingKey = buildDrawingStateKey(this.drawingState)
+    const drawingKey = buildDrawingStateKey(
+      this.drawingState.symbol,
+      this.drawingState.drawings,
+    )
     if (this.hydratedDrawingKey === drawingKey) {
       return
     }
 
-    this.userPriceLines.importState(this.drawingState.priceLines)
+    this.drawingsController.setDrawings(this.drawingState.drawings)
     this.hydratedDrawingKey = drawingKey
   }
 
-  private scheduleDrawingSave(priceLines: Array<SavedPriceLine>) {
+  private scheduleDrawingSave(drawings: Array<SavedDrawing>) {
     if (this.disposed || !this.drawingState) {
       return
     }
 
-    this.hydratedDrawingKey = buildDrawingStateKey({
-      symbol: this.drawingState.symbol,
-      priceLines,
-    })
-    this.drawingSaveQueue.schedule(priceLines)
+    this.hydratedDrawingKey = buildDrawingStateKey(
+      this.drawingState.symbol,
+      drawings,
+    )
+    this.drawingSaveQueue.schedule(drawings)
   }
 }

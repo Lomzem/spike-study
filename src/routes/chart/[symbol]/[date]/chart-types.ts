@@ -1,5 +1,5 @@
 import type { UTCTimestamp } from 'lightweight-charts'
-import type { SavedPriceLine } from './chart-drawing-types'
+import type { DrawingDefaults, SavedDrawing } from './drawings/types'
 
 export interface ChartCandle {
   time: UTCTimestamp
@@ -18,7 +18,11 @@ export interface ChartIndicatorState {
 
 export interface ChartDrawingState {
   symbol: string
-  priceLines: Array<SavedPriceLine>
+  drawings: Array<SavedDrawing>
+}
+
+export interface ChartDrawingDefaultsState {
+  defaults: DrawingDefaults
 }
 
 export interface ChartPageData {
