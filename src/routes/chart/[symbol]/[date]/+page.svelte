@@ -47,6 +47,7 @@
       class="relative flex min-h-0 flex-1 flex-col bg-background/65 backdrop-blur-sm"
     >
       <ChartCanvas
+        symbol={data.symbol}
         candles={data.candles}
         indicators={chartPage.indicators}
         drawings={chartPage.drawings}

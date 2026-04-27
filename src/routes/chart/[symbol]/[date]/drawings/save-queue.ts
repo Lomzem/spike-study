@@ -16,13 +16,21 @@ export class DrawingSaveQueue {
 
     this.pendingDrawings = drawings
     this.saveTimeout = window.setTimeout(() => {
-      if (this.pendingDrawings) {
-        this.onFlush?.(this.pendingDrawings)
-      }
-
-      this.pendingDrawings = null
-      this.saveTimeout = null
+      this.flush()
     }, 500)
+  }
+
+  flush() {
+    if (this.saveTimeout !== null) {
+      window.clearTimeout(this.saveTimeout)
+    }
+
+    if (this.pendingDrawings) {
+      this.onFlush?.(this.pendingDrawings)
+    }
+
+    this.pendingDrawings = null
+    this.saveTimeout = null
   }
 
   cancel() {

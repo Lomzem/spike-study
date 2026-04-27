@@ -41,6 +41,7 @@ interface ChartDrawingsControllerOptions {
   drawings: Array<SavedDrawing>
   defaults: DrawingDefaults
   onChange?: (drawings: Array<SavedDrawing>) => void
+  onLiveChange?: (drawings: Array<SavedDrawing>) => void
   onChartContextMenuRequest?: (request: ContextMenuRequest) => void
   onDrawingMenuRequest?: (
     request: ContextMenuRequest,
@@ -168,6 +169,7 @@ export class ChartDrawingsController {
   private didDrag = false
   private disposed = false
   private onChange?: (drawings: Array<SavedDrawing>) => void
+  private onLiveChange?: (drawings: Array<SavedDrawing>) => void
   private onChartContextMenuRequest?: (request: ContextMenuRequest) => void
   private onDrawingMenuRequest?: (
     request: ContextMenuRequest,
@@ -183,6 +185,7 @@ export class ChartDrawingsController {
     this._drawings = options.drawings
     this.defaults = options.defaults
     this.onChange = options.onChange
+    this.onLiveChange = options.onLiveChange
     this.onChartContextMenuRequest = options.onChartContextMenuRequest
     this.onDrawingMenuRequest = options.onDrawingMenuRequest
     this.onSelectionChange = options.onSelectionChange
@@ -218,6 +221,7 @@ export class ChartDrawingsController {
     this.pendingAnchors = []
     this.draftCursorAnchor = null
     this.primitive.requestRender()
+    this.onLiveChange?.(this._drawings)
   }
 
   setDefaults(defaults: DrawingDefaults) {
@@ -238,6 +242,7 @@ export class ChartDrawingsController {
     this._drawings = nextDrawings
     this.primitive.requestRender()
     this.onSelectionChange?.(drawing)
+    this.onLiveChange?.(nextDrawings)
     this.onChange?.(nextDrawings)
   }
 
@@ -252,6 +257,7 @@ export class ChartDrawingsController {
     this.selectedId = null
     this.primitive.requestRender()
     this.onSelectionChange?.(null)
+    this.onLiveChange?.(this._drawings)
     this.onChange?.(this._drawings)
   }
 
@@ -266,6 +272,7 @@ export class ChartDrawingsController {
     this.container.style.cursor = ''
     this.primitive.requestRender()
     this.onSelectionChange?.(null)
+    this.onLiveChange?.(this._drawings)
     this.onChange?.(this._drawings)
   }
 
@@ -408,6 +415,7 @@ export class ChartDrawingsController {
         this.draftCursorAnchor = null
         this.setSelectedDrawing(nextDrawing)
         this.primitive.requestRender()
+        this.onLiveChange?.(this._drawings)
         this.onChange?.(this._drawings)
       } else {
         this.primitive.requestRender()

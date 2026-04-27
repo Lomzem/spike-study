@@ -27,12 +27,14 @@ import {
 
 interface ChartControllerOptions {
   element: HTMLElement
+  drawingSymbol: string
   candles: Array<ChartCandle>
   onActiveCandleChange?: (candle: ChartCandle | null) => void
   indicators?: ChartIndicatorState
   drawings?: ChartDrawingState
   drawingDefaults?: DrawingDefaults
   onDrawingsChange?: (drawings: Array<SavedDrawing>) => void
+  onLiveDrawingsChange?: (drawings: Array<SavedDrawing>) => void
   onChartContextMenuRequest?: (request: { x: number; y: number }) => void
   onDrawingMenuRequest?: (
     request: { x: number; y: number },
@@ -50,9 +52,11 @@ export class ChartController {
   private resizeObserver: ResizeObserver
   private candleData: Array<ChartCandle>
   private indicatorState: ChartIndicatorState
+  private drawingSymbol: string
   private drawingState: ChartDrawingState | null
   private drawingDefaults: DrawingDefaults
   private onDrawingsChange?: (drawings: Array<SavedDrawing>) => void
+  private onLiveDrawingsChange?: (drawings: Array<SavedDrawing>) => void
   private drawingSaveQueue: DrawingSaveQueue
   private hydratedDrawingKey: string | null = null
   private onActiveCandleChange?: (candle: ChartCandle | null) => void
@@ -70,12 +74,14 @@ export class ChartController {
 
   constructor({
     element,
+    drawingSymbol,
     candles,
     onActiveCandleChange,
     indicators,
     drawings,
     drawingDefaults,
     onDrawingsChange,
+    onLiveDrawingsChange,
     onChartContextMenuRequest,
     onDrawingMenuRequest,
     onSelectedDrawingChange,
@@ -86,10 +92,12 @@ export class ChartController {
       showEma: false,
       showVwap: false,
     }
+    this.drawingSymbol = drawingSymbol
     this.drawingState = drawings ?? null
     this.drawingDefaults =
       drawingDefaults ?? structuredClone(DEFAULT_DRAWING_DEFAULTS)
     this.onDrawingsChange = onDrawingsChange
+    this.onLiveDrawingsChange = onLiveDrawingsChange
     this.onActiveCandleChange = onActiveCandleChange
     this.onChartContextMenuRequest = onChartContextMenuRequest
     this.onDrawingMenuRequest = onDrawingMenuRequest
@@ -137,6 +145,7 @@ export class ChartController {
     this.indicatorSeries?.removeAll()
     this.drawingsController?.destroy()
     this.drawingsController = null
+    this.drawingSaveQueue?.flush()
     this.drawingSaveQueue?.cancel()
     this.resizeObserver?.disconnect()
     this.chart?.unsubscribeCrosshairMove(this.handleCrosshairMove)
@@ -169,6 +178,9 @@ export class ChartController {
 
   set drawings(drawings: ChartDrawingState | null) {
     this.drawingState = drawings
+    if (drawings) {
+      this.drawingSymbol = drawings.symbol
+    }
     this.syncDrawingState()
   }
 
@@ -245,6 +257,7 @@ export class ChartController {
         drawings: this.drawingState?.drawings ?? [],
         defaults: this.drawingDefaults,
         onChange: (drawings) => this.scheduleDrawingSave(drawings),
+        onLiveChange: this.onLiveDrawingsChange,
         onChartContextMenuRequest: this.onChartContextMenuRequest,
         onDrawingMenuRequest: this.onDrawingMenuRequest,
         onSelectionChange: this.onSelectedDrawingChange,
@@ -277,14 +290,11 @@ export class ChartController {
   }
 
   private scheduleDrawingSave(drawings: Array<SavedDrawing>) {
-    if (this.disposed || !this.drawingState) {
+    if (this.disposed || !this.drawingSymbol) {
       return
     }
 
-    this.hydratedDrawingKey = buildDrawingStateKey(
-      this.drawingState.symbol,
-      drawings,
-    )
+    this.hydratedDrawingKey = buildDrawingStateKey(this.drawingSymbol, drawings)
     this.drawingSaveQueue.schedule(drawings)
   }
 }

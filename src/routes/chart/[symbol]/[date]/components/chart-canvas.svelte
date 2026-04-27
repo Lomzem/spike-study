@@ -24,6 +24,7 @@
   } from '../drawings/types'
 
   let {
+    symbol,
     candles,
     indicators,
     drawings,
@@ -32,6 +33,7 @@
     onDrawingsChange,
     onActiveCandleChange,
   }: {
+    symbol: string
     candles: Array<ChartCandle>
     indicators: ChartIndicatorState
     drawings: ChartDrawingState | null
@@ -53,6 +55,7 @@
   let lineDialogOpen = $state(false)
   let fibDialogOpen = $state(false)
   let removeAllDialogOpen = $state(false)
+  let drawingCount = $derived(drawings?.drawings.length ?? 0)
   let lineDialogSession = $state(0)
   let fibDialogSession = $state(0)
   let lineDialogTitle = $state('Edit line')
@@ -63,7 +66,6 @@
     editingLine?.type === 'horizontal-line' ? currentDefaults.horizontalLine : currentDefaults.diagonalLine,
   )
   const showDrawingMenu = $derived(drawingMenuOpen && selectedDrawing !== null)
-  const drawingCount = $derived(drawings?.drawings.length ?? 0)
   const canRemoveAllDrawings = $derived(drawingCount > 0)
 
   $effect(() => {
@@ -141,6 +143,11 @@
   function handleRemoveAllConfirm() {
     controller?.removeAllDrawings()
     removeAllDialogOpen = false
+  }
+
+  function handleDrawingsChange(nextDrawings: Array<SavedDrawing>) {
+    drawingCount = nextDrawings.length
+    onDrawingsChange?.(nextDrawings)
   }
 
   function handleLineConfirm(drawing: HorizontalLineDrawing | DiagonalLineDrawing) {
@@ -289,11 +296,13 @@
 
       controller = new ChartController({
         element: node,
+        drawingSymbol: symbol,
         candles,
         indicators,
         drawings: drawings ?? undefined,
         drawingDefaults: currentDefaults,
         onDrawingsChange,
+        onLiveDrawingsChange: handleDrawingsChange,
         onActiveCandleChange,
         onChartContextMenuRequest: (request) => {
           selectedDrawing = null

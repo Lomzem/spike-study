@@ -37,7 +37,7 @@ export function createDrawingPersistence(
   const canAccessDrawings = $derived(
     !getData().dbError &&
       clerk.isLoaded &&
-      Boolean(clerk.auth.userId) &&
+      Boolean(clerk.session) &&
       convexAuthReady.current,
   )
 
