@@ -4,6 +4,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import { Switch } from '$lib/components/ui/switch/index.js'
+  import { cloneSavedDrawing } from '../clone'
   import type {
     DiagonalLineDefaults,
     DiagonalLineDrawing,
@@ -36,7 +37,7 @@
     onSetDefault?: (defaults: EditableLineDefaults) => void | Promise<void>
   } = $props()
 
-  const getInitialDrawing = () => (drawing ? structuredClone(drawing) : null)
+  const getInitialDrawing = () => (drawing ? cloneSavedDrawing(drawing) : null)
   const getOriginalKey = () => (drawing ? JSON.stringify(drawing) : '')
 
   let draft = $state<EditableLineDrawing | null>(getInitialDrawing())
@@ -79,7 +80,7 @@
       return
     }
 
-    onConfirm?.(structuredClone(draft))
+    onConfirm?.(cloneSavedDrawing(draft))
     open = false
   }
 

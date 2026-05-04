@@ -1,13 +1,16 @@
 import { createContext } from 'svelte'
-import { writable, type Writable } from 'svelte/store'
+
+export interface ConvexAuthReadyContext {
+  readonly current: boolean
+  set(value: boolean): void
+}
 
 const [useConvexAuthReady, setConvexAuthReadyContext] =
-  createContext<Writable<boolean>>()
+  createContext<ConvexAuthReadyContext>()
 
-export function provideConvexAuthReady() {
-  const convexAuthReady = writable(false)
-  setConvexAuthReadyContext(convexAuthReady)
-  return convexAuthReady
+export function provideConvexAuthReady(context: ConvexAuthReadyContext) {
+  setConvexAuthReadyContext(context)
+  return context
 }
 
 export { useConvexAuthReady }

@@ -9,6 +9,7 @@ import type {
   CanvasRenderingTarget2D,
   MediaCoordinatesRenderingScope,
 } from 'fancy-canvas'
+import { cloneSavedDrawing, cloneSavedDrawings } from './clone'
 import { createDrawingFromDefaults } from './defaults'
 import {
   anchorToPoint,
@@ -182,6 +183,7 @@ export class ChartDrawingsController {
     drawing: SavedDrawing,
   ) => void
   private onSelectionChange?: (drawing: SavedDrawing | null) => void
+
   constructor(
     private chart: IChartApi,
     private series: ISeriesApi<'Candlestick'>,
@@ -216,7 +218,7 @@ export class ChartDrawingsController {
   }
 
   setDrawings(drawings: Array<SavedDrawing>) {
-    this._drawings = drawings.map((drawing) => structuredClone(drawing))
+    this._drawings = cloneSavedDrawings(drawings)
     if (
       this.selectedId &&
       !this._drawings.some((drawing) => drawing.id === this.selectedId)
@@ -243,7 +245,7 @@ export class ChartDrawingsController {
 
   updateSelectedDrawing(drawing: SavedDrawing) {
     const nextDrawings = this._drawings.map((existing) =>
-      existing.id === drawing.id ? structuredClone(drawing) : existing,
+      existing.id === drawing.id ? cloneSavedDrawing(drawing) : existing,
     )
     this._drawings = nextDrawings
     this.primitive.requestRender()
@@ -396,7 +398,7 @@ export class ChartDrawingsController {
       return
     }
 
-    const nextDrawing = structuredClone(drawing)
+    const nextDrawing = cloneSavedDrawing(drawing)
     nextDrawing.anchors[this.draggingAnchorIndex] = anchor as never
     this._drawings = this._drawings.map((entry) =>
       entry.id === nextDrawing.id ? nextDrawing : entry,

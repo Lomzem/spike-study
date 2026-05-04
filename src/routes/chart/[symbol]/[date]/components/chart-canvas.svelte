@@ -1,9 +1,11 @@
 <script lang="ts">
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { ChartController } from '../chart-controller'
+  import { cloneSavedDrawing } from '../drawings/clone'
   import {
     cloneDrawingDefaults,
   } from '../drawings/defaults'
+  import { buildDrawingStateKey } from '../drawings/state-key'
   import EditFibDialog from '../drawings/components/edit-fib-dialog.svelte'
   import EditLineDialog from '../drawings/components/edit-line-dialog.svelte'
   import type {
@@ -67,6 +69,9 @@
   )
   const showDrawingMenu = $derived(drawingMenuOpen && selectedDrawing !== null)
   const canRemoveAllDrawings = $derived(drawingCount > 0)
+  const drawingsSyncKey = $derived(
+    drawings ? buildDrawingStateKey(drawings.symbol, drawings.drawings) : null,
+  )
 
   $effect(() => {
     if (controller) {
@@ -81,6 +86,8 @@
   })
 
   $effect(() => {
+    drawingsSyncKey
+
     if (controller) {
       controller.drawings = drawings
     }
@@ -100,13 +107,13 @@
     drawingMenuOpen = false
 
     if (selectedDrawing.type === 'fib-retracement') {
-      editingFib = structuredClone(selectedDrawing)
+      editingFib = cloneSavedDrawing(selectedDrawing)
       fibDialogSession += 1
       fibDialogOpen = true
       return
     }
 
-    editingLine = structuredClone(selectedDrawing)
+    editingLine = cloneSavedDrawing(selectedDrawing)
     lineDialogSession += 1
     lineDialogTitle =
       selectedDrawing.type === 'horizontal-line'

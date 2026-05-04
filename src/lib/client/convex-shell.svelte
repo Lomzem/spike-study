@@ -10,7 +10,15 @@
   const hasConvexConfig = convexUrl.length > 0
 
   let { children }: { children: Snippet } = $props()
-  const convexAuthReady = provideConvexAuthReady()
+  let isConvexAuthReady = $state(false)
+  const convexAuthReady = provideConvexAuthReady({
+    get current() {
+      return isConvexAuthReady
+    },
+    set(value) {
+      isConvexAuthReady = value
+    },
+  })
 
   if (browser && hasConvexConfig) {
     setupConvex(convexUrl)
@@ -29,7 +37,9 @@
 
     $effect(() => {
       if (!clerk.isLoaded) {
-        authMode = 'loading'
+        if (authMode !== 'loading') {
+          authMode = 'loading'
+        }
         return
       }
 

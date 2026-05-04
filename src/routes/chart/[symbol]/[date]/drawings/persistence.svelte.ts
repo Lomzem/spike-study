@@ -2,107 +2,17 @@ import { browser } from '$app/environment'
 import { env as publicEnv } from '$env/dynamic/public'
 import { useConvexClient, useQuery } from 'convex-svelte'
 import { useClerkContext } from 'svelte-clerk'
-import { fromStore } from 'svelte/store'
 import { api } from '../../../../../../convex/_generated/api.js'
 import { useConvexAuthReady } from '$lib/client/convex-auth'
+import { cloneSavedDrawings } from './clone'
 import { cloneDrawingDefaults, DEFAULT_DRAWING_DEFAULTS } from './defaults'
 import { normalizeDrawingDefaults, normalizeSavedDrawings } from './normalize'
 import { buildDrawingStateKey } from './state-key'
-import type {
-  DiagonalLineDrawing,
-  DrawingDefaults,
-  FibRetracementDrawing,
-  HorizontalLineDrawing,
-  SavedDrawing,
-} from './types'
+import type { DrawingDefaults, SavedDrawing } from './types'
 
 interface DrawingPersistenceData {
   symbol: string
   dbError?: string
-}
-
-function cloneDrawingTime(time: SavedDrawing['anchors'][number]['time']) {
-  return typeof time === 'object' && time !== null ? { ...time } : time
-}
-
-function cloneSavedDrawings(drawings: Array<SavedDrawing>) {
-  return drawings.map((drawing) => {
-    switch (drawing.type) {
-      case 'horizontal-line': {
-        const anchors: HorizontalLineDrawing['anchors'] = [
-          {
-            time: cloneDrawingTime(drawing.anchors[0].time),
-            price: drawing.anchors[0].price,
-          },
-        ]
-
-        return {
-          id: drawing.id,
-          type: drawing.type,
-          anchors,
-          color: drawing.color,
-          lineWidth: drawing.lineWidth,
-          lineStyle: drawing.lineStyle,
-          extendLeft: drawing.extendLeft,
-          extendRight: drawing.extendRight,
-        } satisfies SavedDrawing
-      }
-      case 'diagonal-line': {
-        const anchors: DiagonalLineDrawing['anchors'] = [
-          {
-            time: cloneDrawingTime(drawing.anchors[0].time),
-            price: drawing.anchors[0].price,
-          },
-          {
-            time: cloneDrawingTime(drawing.anchors[1].time),
-            price: drawing.anchors[1].price,
-          },
-        ]
-
-        return {
-          id: drawing.id,
-          type: drawing.type,
-          anchors,
-          color: drawing.color,
-          lineWidth: drawing.lineWidth,
-          lineStyle: drawing.lineStyle,
-          extendLeft: drawing.extendLeft,
-          extendRight: drawing.extendRight,
-        } satisfies SavedDrawing
-      }
-      case 'fib-retracement': {
-        const anchors: FibRetracementDrawing['anchors'] = [
-          {
-            time: cloneDrawingTime(drawing.anchors[0].time),
-            price: drawing.anchors[0].price,
-          },
-          {
-            time: cloneDrawingTime(drawing.anchors[1].time),
-            price: drawing.anchors[1].price,
-          },
-        ]
-
-        return {
-          id: drawing.id,
-          type: drawing.type,
-          anchors,
-          color: drawing.color,
-          lineWidth: drawing.lineWidth,
-          lineStyle: drawing.lineStyle,
-          extendLeft: drawing.extendLeft,
-          extendRight: drawing.extendRight,
-          showPrices: drawing.showPrices,
-          showPercentages: drawing.showPercentages,
-          levels: drawing.levels.map((level) => ({
-            id: level.id,
-            value: level.value,
-            color: level.color,
-            visible: level.visible,
-          })),
-        } satisfies SavedDrawing
-      }
-    }
-  })
 }
 
 export function createDrawingPersistence(
@@ -123,8 +33,7 @@ export function createDrawingPersistence(
 
   const clerk = useClerkContext()
   const convex = useConvexClient()
-  const convexAuthReadyStore = useConvexAuthReady()
-  const convexAuthReady = fromStore(convexAuthReadyStore)
+  const convexAuthReady = useConvexAuthReady()
 
   const canAccessDrawings = $derived(
     !getData().dbError &&
@@ -174,8 +83,8 @@ export function createDrawingPersistence(
     return normalizedDrawings
   })
 
-  convexAuthReadyStore.subscribe(() => {
-    if (pendingSave !== null) {
+  $effect(() => {
+    if (canAccessDrawings && pendingSave !== null && !flushingSave) {
       void flushPendingSave()
     }
   })
@@ -224,7 +133,8 @@ export function createDrawingPersistence(
             symbol: getData().symbol,
             drawings: drawingsToSave,
           })
-        } catch {
+        } catch (error) {
+          console.warn('Unable to persist chart drawings to Convex', error)
           startPendingSaveRetry()
           return
         }
@@ -263,9 +173,13 @@ export function createDrawingPersistence(
       return
     }
 
-    await convex.mutation(api.userDrawings.saveDefaults, {
-      defaults,
-    })
+    try {
+      await convex.mutation(api.userDrawings.saveDefaults, {
+        defaults,
+      })
+    } catch (error) {
+      console.warn('Unable to persist drawing defaults to Convex', error)
+    }
   }
 
   const drawings = $derived({

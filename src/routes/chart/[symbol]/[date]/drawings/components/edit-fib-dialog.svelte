@@ -4,6 +4,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import { Switch } from '$lib/components/ui/switch/index.js'
+  import { cloneSavedDrawing } from '../clone'
   import { cloneFibDefaults, cloneFibLevels } from '../defaults'
   import type { FibRetracementDefaults, FibRetracementDrawing } from '../types'
 
@@ -27,7 +28,7 @@
     onSetDefault?: (defaults: FibRetracementDefaults) => void | Promise<void>
   } = $props()
 
-  const getInitialDrawing = () => (drawing ? structuredClone(drawing) : null)
+  const getInitialDrawing = () => (drawing ? cloneSavedDrawing(drawing) : null)
   const getOriginalKey = () => (drawing ? JSON.stringify(drawing) : '')
 
   let draft = $state<FibRetracementDrawing | null>(getInitialDrawing())
@@ -100,7 +101,7 @@
     }
 
     draft.levels = [...draft.levels].sort((left, right) => left.value - right.value)
-    onConfirm?.(structuredClone(draft))
+    onConfirm?.(cloneSavedDrawing(draft))
     open = false
   }
 
