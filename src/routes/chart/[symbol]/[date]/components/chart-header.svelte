@@ -29,6 +29,10 @@
     onToggleVwap?: () => void
   } = $props()
 
+  const replayHref = $derived(
+    `/chart/${encodeURIComponent(symbol)}/${encodeURIComponent(date)}/replay`,
+  )
+
 </script>
 
 <header class="flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-sm">
@@ -53,6 +57,8 @@
   </div>
 
   <div class="ml-auto flex flex-wrap items-center gap-2">
+    <Button href={replayHref} variant="outline" size="sm">Replay</Button>
+
     <Popover.Root>
       <Popover.Trigger>
         {#snippet child({ props })}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
+  import type { LogicalRange } from 'lightweight-charts'
   import { ChartController } from '../chart-controller'
   import { cloneSavedDrawing } from '../drawings/clone'
   import { getCurrentDrawingDefaults } from '../drawings/current-defaults'
@@ -32,18 +33,22 @@
     indicators,
     drawings,
     drawingDefaults,
+    initialVisibleLogicalRange,
     onDefaultsChange,
     onDrawingsChange,
     onActiveCandleChange,
+    onVisibleLogicalRangeChange,
   }: {
     symbol: string
     candles: Array<ChartCandle>
     indicators: ChartIndicatorState
     drawings: ChartDrawingState | null
     drawingDefaults: DrawingDefaults
+    initialVisibleLogicalRange?: LogicalRange | null
     onDefaultsChange?: (defaults: DrawingDefaults) => void | Promise<void>
     onDrawingsChange?: (drawings: Array<SavedDrawing>) => void
     onActiveCandleChange?: (candle: ChartCandle | null) => void
+    onVisibleLogicalRangeChange?: (range: LogicalRange | null) => void
   } = $props()
 
   let containerElement: HTMLDivElement | null = null
@@ -76,18 +81,13 @@
   const drawingsSyncKey = $derived(
     drawings ? buildDrawingStateKey(drawings.symbol, drawings.drawings) : null,
   )
-
   $effect(() => {
-    candles
-
     if (controller) {
       controller.candles = candles
     }
   })
 
   $effect(() => {
-    indicators
-
     if (controller) {
       controller.indicators = indicators
     }
@@ -102,8 +102,6 @@
   })
 
   $effect(() => {
-    currentDefaults
-
     if (controller) {
       controller.defaults = currentDefaults
     }
@@ -324,12 +322,14 @@
         element: node,
         drawingSymbol: symbol,
         candles,
+        initialVisibleLogicalRange,
         indicators,
         drawings: drawings ?? undefined,
         drawingDefaults: currentDefaults,
         onDrawingsChange,
         onLiveDrawingsChange: handleDrawingsChange,
         onActiveCandleChange,
+        onVisibleLogicalRangeChange,
         onChartContextMenuRequest: (request) => {
           selectedDrawing = null
           openChartContextMenuAt(request.x, request.y)
