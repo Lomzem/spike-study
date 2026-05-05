@@ -1,4 +1,5 @@
 import {
+  type LogicalRange,
   type IChartApi,
   type ISeriesApi,
   type MouseEventParams,
@@ -20,6 +21,7 @@ import type {
   ChartIndicatorState,
 } from './chart-types'
 import {
+  appendChartViewData,
   createChartView,
   fitChartViewContent,
   setChartViewData,
@@ -29,7 +31,9 @@ interface ChartControllerOptions {
   element: HTMLElement
   drawingSymbol: string
   candles: Array<ChartCandle>
+  initialVisibleLogicalRange?: LogicalRange | null
   onActiveCandleChange?: (candle: ChartCandle | null) => void
+  onVisibleLogicalRangeChange?: (range: LogicalRange | null) => void
   indicators?: ChartIndicatorState
   drawings?: ChartDrawingState
   drawingDefaults?: DrawingDefaults
@@ -71,12 +75,15 @@ export class ChartController {
     drawing: SavedDrawing,
   ) => void
   private onSelectedDrawingChange?: (drawing: SavedDrawing | null) => void
+  private onVisibleLogicalRangeChange?: (range: LogicalRange | null) => void
 
   constructor({
     element,
     drawingSymbol,
     candles,
+    initialVisibleLogicalRange,
     onActiveCandleChange,
+    onVisibleLogicalRangeChange,
     indicators,
     drawings,
     drawingDefaults,
@@ -102,6 +109,7 @@ export class ChartController {
     this.onChartContextMenuRequest = onChartContextMenuRequest
     this.onDrawingMenuRequest = onDrawingMenuRequest
     this.onSelectedDrawingChange = onSelectedDrawingChange
+    this.onVisibleLogicalRangeChange = onVisibleLogicalRangeChange
     this.drawingSaveQueue = new DrawingSaveQueue((drawingsToSave) => {
       this.onDrawingsChange?.(drawingsToSave)
     })
@@ -114,11 +122,17 @@ export class ChartController {
     this.indicatorSeries = new ChartIndicatorSeries(this.chart)
     setChartViewData(chartView, candles)
     fitChartViewContent(chartView)
+    if (initialVisibleLogicalRange) {
+      this.chart.timeScale().setVisibleLogicalRange(initialVisibleLogicalRange)
+    }
     this.onActiveCandleChange?.(candles.at(-1) ?? null)
     this.syncIndicators()
     this.syncDrawings(element)
 
     this.chart.subscribeCrosshairMove(this.handleCrosshairMove)
+    this.chart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(this.handleVisibleLogicalRangeChange)
 
     this.resizeObserver = new ResizeObserver(() => {
       const width = element.clientWidth
@@ -148,6 +162,11 @@ export class ChartController {
     this.drawingSaveQueue?.flush()
     this.resizeObserver?.disconnect()
     this.chart?.unsubscribeCrosshairMove(this.handleCrosshairMove)
+    this.chart
+      ?.timeScale()
+      .unsubscribeVisibleLogicalRangeChange(
+        this.handleVisibleLogicalRangeChange,
+      )
     this.chart?.remove()
   }
 
@@ -156,16 +175,19 @@ export class ChartController {
       return
     }
 
+    const previousCandles = this.candleData
     this.candleData = candles
     this.candleLookup = new Map(candles.map((candle) => [candle.time, candle]))
-    setChartViewData(
-      {
-        chart: this.chart,
-        candlestickSeries: this.candlestickSeries,
-        volumeSeries: this.volumeSeries,
-      },
-      candles,
-    )
+    const chartView = {
+      chart: this.chart,
+      candlestickSeries: this.candlestickSeries,
+      volumeSeries: this.volumeSeries,
+    }
+    if (isAppendedCandleRange(previousCandles, candles)) {
+      appendChartViewData(chartView, candles.slice(previousCandles.length))
+    } else {
+      setChartViewData(chartView, candles)
+    }
     this.onActiveCandleChange?.(candles.at(-1) ?? null)
     this.syncIndicators()
   }
@@ -243,6 +265,10 @@ export class ChartController {
     )
   }
 
+  private handleVisibleLogicalRangeChange = (range: LogicalRange | null) => {
+    this.onVisibleLogicalRangeChange?.(range)
+  }
+
   private syncIndicators() {
     this.indicatorSeries.sync(this.indicatorState, this.candleData)
   }
@@ -296,4 +322,24 @@ export class ChartController {
     this.hydratedDrawingKey = buildDrawingStateKey(this.drawingSymbol, drawings)
     this.drawingSaveQueue.schedule(drawings)
   }
+}
+
+function isAppendedCandleRange(
+  previousCandles: Array<ChartCandle>,
+  nextCandles: Array<ChartCandle>,
+) {
+  if (
+    previousCandles.length === 0 ||
+    nextCandles.length <= previousCandles.length
+  ) {
+    return false
+  }
+
+  for (let index = 0; index < previousCandles.length; index += 1) {
+    if (previousCandles[index].time !== nextCandles[index].time) {
+      return false
+    }
+  }
+
+  return true
 }

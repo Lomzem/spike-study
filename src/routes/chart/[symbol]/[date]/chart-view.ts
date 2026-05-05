@@ -89,6 +89,16 @@ export function setChartViewData(view: ChartView, candles: Array<ChartCandle>) {
   view.volumeSeries.setData(toVolumeData(candles))
 }
 
+export function appendChartViewData(
+  view: ChartView,
+  candles: Array<ChartCandle>,
+) {
+  for (const candle of candles) {
+    view.candlestickSeries.update(toCandlestickDatum(candle))
+    view.volumeSeries.update(toVolumeDatum(candle))
+  }
+}
+
 export function fitChartViewContent(view: ChartView) {
   view.chart.timeScale().fitContent()
 }
@@ -96,24 +106,34 @@ export function fitChartViewContent(view: ChartView) {
 function toCandlestickData(
   candles: Array<ChartCandle>,
 ): Array<CandlestickData<UTCTimestamp>> {
-  return candles.map((candle) => ({
-    time: candle.time,
-    open: candle.open,
-    high: candle.high,
-    low: candle.low,
-    close: candle.close,
-  }))
+  return candles.map(toCandlestickDatum)
 }
 
 function toVolumeData(
   candles: Array<ChartCandle>,
 ): Array<HistogramData<UTCTimestamp>> {
-  return candles.map((candle) => ({
+  return candles.map(toVolumeDatum)
+}
+
+function toCandlestickDatum(
+  candle: ChartCandle,
+): CandlestickData<UTCTimestamp> {
+  return {
+    time: candle.time,
+    open: candle.open,
+    high: candle.high,
+    low: candle.low,
+    close: candle.close,
+  }
+}
+
+function toVolumeDatum(candle: ChartCandle): HistogramData<UTCTimestamp> {
+  return {
     time: candle.time,
     value: candle.volume,
     color:
       candle.close >= candle.open
         ? 'rgba(90, 138, 92, 0.45)'
         : 'rgba(196, 120, 58, 0.45)',
-  }))
+  }
 }
