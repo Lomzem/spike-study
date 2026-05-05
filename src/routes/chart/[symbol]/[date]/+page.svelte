@@ -8,6 +8,21 @@
 
   let { data }: PageProps = $props()
   const chartPage = createChartPageState(() => data)
+  let showSma = $state(false)
+  let showEma = $state(false)
+  let showVwap = $state(false)
+
+  function toggleSma() {
+    showSma = !showSma
+  }
+
+  function toggleEma() {
+    showEma = !showEma
+  }
+
+  function toggleVwap() {
+    showVwap = !showVwap
+  }
 </script>
 
 <svelte:head>
@@ -28,9 +43,12 @@
     date={data.date}
     availableDates={chartPage.availableDates}
     activeCandle={chartPage.activeCandle}
-    bind:showSma={chartPage.showSma}
-    bind:showEma={chartPage.showEma}
-    bind:showVwap={chartPage.showVwap}
+    {showSma}
+    {showEma}
+    {showVwap}
+    onToggleSma={toggleSma}
+    onToggleEma={toggleEma}
+    onToggleVwap={toggleVwap}
   />
 
   {#if data.dbError}
@@ -49,7 +67,11 @@
       <ChartCanvas
         symbol={data.symbol}
         candles={data.candles}
-        indicators={chartPage.indicators}
+        indicators={{
+          showSma,
+          showEma,
+          showVwap,
+        }}
         drawings={chartPage.drawings}
         drawingDefaults={chartPage.drawingDefaults}
         onDefaultsChange={chartPage.saveDefaults}

@@ -10,9 +10,12 @@
     date,
     availableDates,
     activeCandle,
-    showSma = $bindable(false),
-    showEma = $bindable(false),
-    showVwap = $bindable(false),
+    showSma,
+    showEma,
+    showVwap,
+    onToggleSma,
+    onToggleEma,
+    onToggleVwap,
   }: {
     symbol: string
     date: string
@@ -21,6 +24,9 @@
     showSma: boolean
     showEma: boolean
     showVwap: boolean
+    onToggleSma?: () => void
+    onToggleEma?: () => void
+    onToggleVwap?: () => void
   } = $props()
 
 </script>
@@ -63,7 +69,7 @@
             class="w-full justify-start"
             aria-pressed={showSma}
             aria-label="Toggle SMA 9 indicator"
-            onclick={() => (showSma = !showSma)}
+            onclick={onToggleSma}
           >
             SMA 9
           </Button>
@@ -75,7 +81,7 @@
             class="w-full justify-start"
             aria-pressed={showEma}
             aria-label="Toggle EMA 9 indicator"
-            onclick={() => (showEma = !showEma)}
+            onclick={onToggleEma}
           >
             EMA 9
           </Button>
@@ -87,7 +93,7 @@
             class="w-full justify-start"
             aria-pressed={showVwap}
             aria-label="Toggle VWAP indicator"
-            onclick={() => (showVwap = !showVwap)}
+            onclick={onToggleVwap}
           >
             VWAP
           </Button>

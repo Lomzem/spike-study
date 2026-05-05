@@ -78,12 +78,16 @@
   )
 
   $effect(() => {
+    candles
+
     if (controller) {
       controller.candles = candles
     }
   })
 
   $effect(() => {
+    indicators
+
     if (controller) {
       controller.indicators = indicators
     }
@@ -98,6 +102,8 @@
   })
 
   $effect(() => {
+    currentDefaults
+
     if (controller) {
       controller.defaults = currentDefaults
     }

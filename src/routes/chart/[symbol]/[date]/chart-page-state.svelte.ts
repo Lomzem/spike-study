@@ -1,9 +1,5 @@
 import { createDrawingPersistence } from './drawings/persistence.svelte'
-import type {
-  ChartCandle,
-  ChartIndicatorState,
-  ChartPageData,
-} from './chart-types'
+import type { ChartCandle, ChartPageData } from './chart-types'
 
 export function createChartPageState(getData: () => ChartPageData) {
   const drawingPersistence = createDrawingPersistence(getData)
@@ -12,15 +8,7 @@ export function createChartPageState(getData: () => ChartPageData) {
   const drawingDefaults = $derived(drawingPersistence.defaults)
 
   let activeCandle = $derived<ChartCandle | null>(candles.at(-1) ?? null)
-  let showSma = $state(false)
-  let showEma = $state(false)
-  let showVwap = $state(false)
   const availableDates = $derived(getData().availableDates)
-  const indicators = $derived<ChartIndicatorState>({
-    showSma,
-    showEma,
-    showVwap,
-  })
 
   const currentDateIndex = $derived(availableDates.indexOf(getData().date))
   const previousDate = $derived(
@@ -49,9 +37,6 @@ export function createChartPageState(getData: () => ChartPageData) {
     get drawingDefaults() {
       return drawingDefaults
     },
-    get indicators() {
-      return indicators
-    },
     get nextDate() {
       return nextDate
     },
@@ -61,23 +46,5 @@ export function createChartPageState(getData: () => ChartPageData) {
     saveDefaults: drawingPersistence.saveDefaults,
     saveDrawings: drawingPersistence.saveDrawings,
     setActiveCandle,
-    get showEma() {
-      return showEma
-    },
-    set showEma(value: boolean) {
-      showEma = value
-    },
-    get showSma() {
-      return showSma
-    },
-    set showSma(value: boolean) {
-      showSma = value
-    },
-    get showVwap() {
-      return showVwap
-    },
-    set showVwap(value: boolean) {
-      showVwap = value
-    },
   }
 }
