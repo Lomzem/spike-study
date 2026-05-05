@@ -124,9 +124,6 @@
   <Dialog.Content class="max-w-md gap-5 border-border/70 bg-[#211b14]/96 p-5 text-foreground shadow-xl backdrop-blur-sm">
     <Dialog.Header>
       <Dialog.Title>{title}</Dialog.Title>
-      <Dialog.Description class="text-muted-foreground">
-        Update this drawing or save its current settings as the new default for future drawings.
-      </Dialog.Description>
     </Dialog.Header>
 
     {#if draft}
@@ -184,13 +181,13 @@
       </div>
     {/if}
 
-    <Dialog.Footer class="flex-col gap-2 sm:flex-row sm:justify-end">
+    <Dialog.Footer class="gap-2 sm:flex-row sm:items-center">
       <Dialog.Close type="button" class="contents">
         {#snippet child({ props })}
           <Button variant="outline" {...props}>Cancel</Button>
         {/snippet}
       </Dialog.Close>
-      <Button type="button" variant={savedAsDefault ? 'secondary' : 'outline'} disabled={!canSaveDefaults} onclick={handleSetDefault}>
+      <Button type="button" class="sm:mr-auto" variant={savedAsDefault ? 'secondary' : 'outline'} disabled={!canSaveDefaults} onclick={handleSetDefault}>
         {savedAsDefault ? 'Saved as Default' : 'Set as Default'}
       </Button>
       <Button type="button" disabled={!hasDrawingChanges} onclick={handleConfirm}>Confirm</Button>
