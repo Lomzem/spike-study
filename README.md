@@ -5,6 +5,7 @@ Spike Study is a SvelteKit app for reviewing historical intraday stock action.
 ## Features
 
 - Interactive minute charts powered by Lightweight Charts
+- Intraday replay mode with simulated trading
 - SMA, EMA, and VWAP overlays
 - Drawing tools with persisted user state
 - Auth-protected chart and scanner workflows
