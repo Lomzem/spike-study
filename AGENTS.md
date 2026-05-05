@@ -77,6 +77,7 @@ Prefer a little duplication over an abstraction that hides intent.
 - UI components should orchestrate chart behavior, not implement low-level chart lifecycle details directly.
 - Indicator calculations and chart data transforms should live in plain TypeScript modules.
 - User drawing behavior should remain isolated and explicit, not mixed into unrelated page code.
+- Replay mode has a known chart update constraint: newly revealed candles do not reliably paint when replay uses a plain long-lived `ChartCanvas` instance. The working fix is route-local in `replay/components/replay-chart-canvas.svelte`: remount `ChartCanvas` when the last revealed candle changes, and preserve the visible logical range across remounts. Do not remove that wrapper unless you verify live replay candle updates still work.
 
 ## UI and Styling Rules
 
