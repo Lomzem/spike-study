@@ -1,95 +1,56 @@
 # Spike Study
 
-A stock market analysis application for studying intraday price spikes. View interactive candlestick charts with minute-level data for any stock symbol and date.
+Spike Study is a SvelteKit app for reviewing historical intraday stock action.
 
-## Key Features
+## Features
 
-- Interactive intraday candlestick charts (1-minute bars) powered by Lightweight Charts
-- Daily stock data with calculated metrics: gap, range, and change
-- Symbol search and date picker for navigating chart data
-- User authentication via Clerk
-- Real-time backend with Convex
-- Background data jobs for fetching and backfilling market data
+- Interactive minute charts powered by Lightweight Charts
+- SMA, EMA, and VWAP overlays
+- Drawing tools with persisted user state
+- Auth-protected chart and scanner workflows
 
-## Tech Stack
+## Stack
 
-- **Framework**: [TanStack Start](https://tanstack.com/start) (React 19)
-- **Routing**: [TanStack Router](https://tanstack.com/router) (file-based)
-- **Backend**: [Convex](https://convex.dev) (serverless, real-time)
-- **Database**: [Turso](https://turso.tech) (LibSQL) with [Drizzle ORM](https://orm.drizzle.team)
-- **Auth**: [Clerk](https://clerk.com) (integrated with Convex)
-- **Charts**: [Lightweight Charts](https://tradingview.github.io/lightweight-charts/)
-- **UI**: [shadcn/ui](https://ui.shadcn.com) + [Tailwind CSS](https://tailwindcss.com) v4
-- **Market Data**: Massive API
-- **Build Tool**: [Vite](https://vite.dev) 7
-- **Language**: TypeScript 5.9
+- SvelteKit + Svelte 5
+- TypeScript
+- Tailwind CSS + shadcn-svelte
+- Clerk for auth
+- Convex for user drawing data
+- Drizzle + libsql/Turso for market data
+- Bun for package management and scripts
 
-## Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org)
-- [pnpm](https://pnpm.io)
-
-### Installation
+## Setup
 
 ```bash
-pnpm install
-```
-
-### Environment Setup
-
-Copy the example env file and fill in your keys:
-
-```bash
+bun install
 cp .env.example .env.local
 ```
 
-| Variable             | Description                 | Where to get it                                        |
-| -------------------- | --------------------------- | ------------------------------------------------------ |
-| `CONVEX_DEPLOYMENT`  | Convex deployment ID        | [convex.dev](https://convex.dev) - create a project    |
-| `CLERK_SECRET_KEY`   | Clerk authentication secret | [clerk.com](https://clerk.com) - create an application |
-| `MASSIVE_API_KEY`    | Market data API key         | [Massive API](https://massivealgo.com)                 |
-| `TURSO_DATABASE_URL` | Turso database URL          | [turso.tech](https://turso.tech) - create a database   |
-| `TURSO_AUTH_TOKEN`   | Turso auth token            | Generated via `turso db tokens create`                 |
+Fill in the required env vars for Clerk, Convex, market data, and libsql/Turso.
 
-You will also need to configure Clerk as an auth provider in Convex by following the [Convex + Clerk docs](https://docs.convex.dev/auth/clerk).
-
-### Running the App
+## Run
 
 ```bash
-# Start both the web dev server and Convex backend
-pnpm dev
+bun run dev
 ```
 
-This runs `convex dev --once` to sync your schema, then starts the Vite dev server and Convex watcher concurrently.
+## Useful Commands
 
-The app will be available at `http://localhost:3000`.
+| Command         | Description                           |
+| --------------- | ------------------------------------- |
+| `bun run dev`   | Start the app and Convex dev workflow |
+| `bun run build` | Build the app and run checks          |
+| `bun run check` | Run `svelte-check`                    |
+| `bun run test`  | Run Vitest                            |
+| `bun run lint`  | Run ESLint and checks                 |
 
-### Other Scripts
+## Structure
 
-| Command           | Description                                 |
-| ----------------- | ------------------------------------------- |
-| `pnpm dev:web`    | Run only the Vite dev server                |
-| `pnpm dev:convex` | Run only the Convex dev server              |
-| `pnpm build`      | Build for production + type check           |
-| `pnpm start`      | Run the production build                    |
-| `pnpm db:push`    | Push Drizzle schema changes to Turso        |
-| `pnpm db:studio`  | Open Drizzle Studio to inspect the database |
-| `pnpm lint`       | Run ESLint and TypeScript type checking     |
-| `pnpm format`     | Format code with Prettier                   |
-
-## Project Structure
-
-```
+```text
 src/
-  routes/           File-based routes (TanStack Router)
-  components/ui/    shadcn UI components
-  hooks/            React hooks (e.g., useChart)
-  jobs/             Background data-fetching jobs
-  market-data/      Database schema and client (Drizzle + Turso)
-convex/
-  schema.ts         Convex database schema
-  fetchStockData.ts Convex functions for market data
-  auth.config.ts    Clerk auth configuration
+  routes/        App routes and route-local chart code
+  lib/           Shared UI and runtime-specific modules
+  jobs/          Data-fetching and backfill jobs
+convex/          User data and persistence functions
+drizzle/         Database migrations
 ```
