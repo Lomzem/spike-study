@@ -5,6 +5,10 @@ import { useClerkContext } from 'svelte-clerk'
 import { api } from '../../../../../../convex/_generated/api.js'
 import { useConvexAuthReady } from '$lib/client/convex-auth'
 import { cloneSavedDrawings } from './clone'
+import {
+  buildDrawingDefaultsKey,
+  getLiveDrawingDefaults,
+} from './default-persistence'
 import { cloneDrawingDefaults, DEFAULT_DRAWING_DEFAULTS } from './defaults'
 import { normalizeDrawingDefaults, normalizeSavedDrawings } from './normalize'
 import { buildDrawingStateKey } from './state-key'
@@ -60,7 +64,11 @@ export function createDrawingPersistence(
   let localDrawings = $state<Array<SavedDrawing>>([])
   let pendingSave = $state<Array<SavedDrawing> | null>(null)
   let awaitingRemoteKey = $state<string | null>(null)
+  let optimisticDefaults = $state.raw<DrawingDefaults | null>(null)
+  let pendingDefaults = $state.raw<DrawingDefaults | null>(null)
+  let awaitingRemoteDefaultsKey = $state<string | null>(null)
   let flushingSave = false
+  let flushingDefaultsSave = false
   let pendingSaveRetryTimer: number | null = null
 
   function getDrawingsKey(drawings: Array<SavedDrawing>) {
@@ -68,6 +76,9 @@ export function createDrawingPersistence(
   }
 
   const normalizedDrawingsKey = $derived(getDrawingsKey(normalizedDrawings))
+  const normalizedDefaultsKey = $derived(
+    buildDrawingDefaultsKey(normalizedDefaults),
+  )
   const liveDrawings = $derived.by(() => {
     if (pendingSave !== null) {
       return pendingSave
@@ -82,10 +93,39 @@ export function createDrawingPersistence(
 
     return normalizedDrawings
   })
+  const liveDefaults = $derived.by(() =>
+    getLiveDrawingDefaults({
+      normalizedDefaults,
+      normalizedDefaultsKey,
+      optimisticDefaults,
+      pendingDefaults,
+      awaitingRemoteDefaultsKey,
+    }),
+  )
 
   $effect(() => {
     if (canAccessDrawings && pendingSave !== null && !flushingSave) {
       void flushPendingSave()
+    }
+  })
+
+  $effect(() => {
+    if (
+      canAccessDrawings &&
+      pendingDefaults !== null &&
+      !flushingDefaultsSave
+    ) {
+      void flushPendingDefaultsSave()
+    }
+  })
+
+  $effect(() => {
+    if (
+      awaitingRemoteDefaultsKey !== null &&
+      normalizedDefaultsKey === awaitingRemoteDefaultsKey
+    ) {
+      awaitingRemoteDefaultsKey = null
+      optimisticDefaults = null
     }
   })
 
@@ -168,17 +208,55 @@ export function createDrawingPersistence(
     startPendingSaveRetry()
   }
 
-  async function saveDefaults(defaults: DrawingDefaults) {
-    if (!canAccessDrawings) {
+  async function flushPendingDefaultsSave() {
+    if (
+      !canAccessDrawings ||
+      pendingDefaults === null ||
+      flushingDefaultsSave
+    ) {
       return
     }
 
+    flushingDefaultsSave = true
+
     try {
-      await convex.mutation(api.userDrawings.saveDefaults, {
-        defaults,
-      })
-    } catch (error) {
-      console.warn('Unable to persist drawing defaults to Convex', error)
+      while (canAccessDrawings && pendingDefaults !== null) {
+        const defaultsToSave = cloneDrawingDefaults(pendingDefaults)
+        const defaultsKey = buildDrawingDefaultsKey(defaultsToSave)
+
+        try {
+          await convex.mutation(api.userDrawings.saveDefaults, {
+            defaults: defaultsToSave,
+          })
+        } catch (error) {
+          pendingDefaults = null
+          awaitingRemoteDefaultsKey = null
+          optimisticDefaults = null
+          console.warn('Unable to persist drawing defaults to Convex', error)
+          return
+        }
+
+        if (
+          pendingDefaults !== null &&
+          buildDrawingDefaultsKey(pendingDefaults) === defaultsKey
+        ) {
+          pendingDefaults = null
+        }
+      }
+    } finally {
+      flushingDefaultsSave = false
+    }
+  }
+
+  async function saveDefaults(defaults: DrawingDefaults) {
+    const nextDefaults = cloneDrawingDefaults(defaults)
+
+    optimisticDefaults = nextDefaults
+    pendingDefaults = nextDefaults
+    awaitingRemoteDefaultsKey = buildDrawingDefaultsKey(nextDefaults)
+
+    if (canAccessDrawings) {
+      await flushPendingDefaultsSave()
     }
   }
 
@@ -189,7 +267,7 @@ export function createDrawingPersistence(
 
   return {
     get defaults() {
-      return normalizedDefaults
+      return liveDefaults
     },
     get drawings() {
       return drawings

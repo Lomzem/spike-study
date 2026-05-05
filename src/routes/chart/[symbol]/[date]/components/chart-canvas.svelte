@@ -2,6 +2,7 @@
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { ChartController } from '../chart-controller'
   import { cloneSavedDrawing } from '../drawings/clone'
+  import { getCurrentDrawingDefaults } from '../drawings/current-defaults'
   import {
     cloneDrawingDefaults,
   } from '../drawings/defaults'
@@ -49,7 +50,7 @@
   let controller: ChartController | null = null
 
   let selectedDrawing = $state<SavedDrawing | null>(null)
-  let currentDefaults = $derived.by(() => cloneDrawingDefaults(drawingDefaults))
+  let localDefaultsOverride = $state.raw<DrawingDefaults | null>(null)
   let drawingMenuCoords = $state({ x: 0, y: 0 })
   let chartContextMenuCoords = $state({ x: 0, y: 0 })
   let drawingMenuOpen = $state(false)
@@ -64,6 +65,9 @@
   let editingLine = $state<HorizontalLineDrawing | DiagonalLineDrawing | null>(null)
   let editingFib = $state<FibRetracementDrawing | null>(null)
 
+  const currentDefaults = $derived(
+    getCurrentDrawingDefaults(drawingDefaults, localDefaultsOverride),
+  )
   const selectedHorizontalDefaults = $derived(
     editingLine?.type === 'horizontal-line' ? currentDefaults.horizontalLine : currentDefaults.diagonalLine,
   )
@@ -173,7 +177,11 @@
       ...currentDefaults,
       horizontalLine: { ...defaults },
     }
-    currentDefaults = cloneDrawingDefaults(nextDefaults)
+
+    localDefaultsOverride = cloneDrawingDefaults(nextDefaults)
+    if (controller) {
+      controller.defaults = localDefaultsOverride
+    }
     await onDefaultsChange?.(nextDefaults)
   }
 
@@ -182,7 +190,10 @@
       ...currentDefaults,
       diagonalLine: { ...defaults },
     }
-    currentDefaults = cloneDrawingDefaults(nextDefaults)
+    localDefaultsOverride = cloneDrawingDefaults(nextDefaults)
+    if (controller) {
+      controller.defaults = localDefaultsOverride
+    }
     await onDefaultsChange?.(nextDefaults)
   }
 
@@ -191,7 +202,10 @@
       ...currentDefaults,
       fibRetracement: structuredClone(defaults),
     }
-    currentDefaults = cloneDrawingDefaults(nextDefaults)
+    localDefaultsOverride = cloneDrawingDefaults(nextDefaults)
+    if (controller) {
+      controller.defaults = localDefaultsOverride
+    }
     await onDefaultsChange?.(nextDefaults)
   }
 

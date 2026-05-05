@@ -10,6 +10,7 @@
     "dev:convex": "bunx convex dev",
     "build": "vite build && bun run check",
     "preview": "vite preview",
+    "test": "vitest run",
     "prepare": "svelte-kit sync || echo '' && husky",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -67,7 +68,8 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.1",
-    "vite": "^8.0.7"
+    "vite": "^8.0.7",
+    "vitest": "^4.1.5"
   },
   "lint-staged": {
     "*": "prettier --ignore-unknown --write"
