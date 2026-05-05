@@ -27,7 +27,7 @@
 
   const chartKey = $derived(candles.at(-1)?.time ?? 'empty')
   const initialVisibleLogicalRange = $derived.by(() =>
-    preserveReplayVisibleLogicalRange({
+    preserveVisibleLogicalRangeOnRemount({
       currentRange: visibleLogicalRange,
       previousCandleCount: lastRenderedCandleCount,
       nextCandleCount: candles.length,
@@ -44,7 +44,7 @@
     visibleLogicalRange = range
   }
 
-  function preserveReplayVisibleLogicalRange({
+  function preserveVisibleLogicalRangeOnRemount({
     currentRange,
     previousCandleCount,
     nextCandleCount,

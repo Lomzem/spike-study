@@ -177,15 +177,23 @@ export class ChartController {
 
     const previousCandles = this.candleData
     this.candleData = candles
-    this.candleLookup = new Map(candles.map((candle) => [candle.time, candle]))
     const chartView = {
       chart: this.chart,
       candlestickSeries: this.candlestickSeries,
       volumeSeries: this.volumeSeries,
     }
     if (isAppendedCandleRange(previousCandles, candles)) {
-      appendChartViewData(chartView, candles.slice(previousCandles.length))
+      const appendedCandles = candles.slice(previousCandles.length)
+
+      for (const candle of appendedCandles) {
+        this.candleLookup.set(candle.time, candle)
+      }
+
+      appendChartViewData(chartView, appendedCandles)
     } else {
+      this.candleLookup = new Map(
+        candles.map((candle) => [candle.time, candle]),
+      )
       setChartViewData(chartView, candles)
     }
     this.onActiveCandleChange?.(candles.at(-1) ?? null)

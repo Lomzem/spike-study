@@ -81,10 +81,6 @@
   const drawingsSyncKey = $derived(
     drawings ? buildDrawingStateKey(drawings.symbol, drawings.drawings) : null,
   )
-  const syncedDrawings = $derived(
-    drawingsSyncKey === null ? drawings : drawings,
-  )
-
   $effect(() => {
     if (controller) {
       controller.candles = candles
@@ -98,8 +94,10 @@
   })
 
   $effect(() => {
+    drawingsSyncKey
+
     if (controller) {
-      controller.drawings = syncedDrawings
+      controller.drawings = drawings
     }
   })
 

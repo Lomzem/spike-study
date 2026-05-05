@@ -25,6 +25,8 @@ import type {
   ReplaySpeed,
 } from './replay-types'
 
+const MAX_REPLAY_TICK_MS = 1_000
+
 export function createReplayPageState(getData: () => ReplayPageData) {
   const drawingPersistence = createDrawingPersistence(getData)
   const storage = createLocalReplayStorage()
@@ -36,12 +38,15 @@ export function createReplayPageState(getData: () => ReplayPageData) {
   }
 
   const storageKey = getStorageKey()
-  const persistedSnapshot = restoreReplaySnapshot({
-    symbol: storageKey.symbol,
-    date: storageKey.date,
-    candles: getData().candles,
-    snapshot: storage.load(storageKey),
-  })
+  const persistedSnapshot = {
+    ...restoreReplaySnapshot({
+      symbol: storageKey.symbol,
+      date: storageKey.date,
+      candles: getData().candles,
+      snapshot: storage.load(storageKey),
+    }),
+    isPlaying: false,
+  } satisfies ReplaySnapshot
 
   const candles = $derived(getData().candles)
   const availableDates = $derived(getData().availableDates)
@@ -85,7 +90,7 @@ export function createReplayPageState(getData: () => ReplayPageData) {
 
     const intervalId = window.setInterval(() => {
       const now = performance.now()
-      const elapsedMs = now - lastTickMs
+      const elapsedMs = Math.min(now - lastTickMs, MAX_REPLAY_TICK_MS)
       lastTickMs = now
       tickReplay(elapsedMs)
     }, 250)
@@ -219,6 +224,11 @@ export function createReplayPageState(getData: () => ReplayPageData) {
   function handleVisibilityChange() {
     if (document.hidden) {
       persistNow()
+      return
+    }
+
+    if (snapshot.isPlaying) {
+      lastTickMs = performance.now()
     }
   }
 

@@ -21,13 +21,9 @@
 <svelte:window onpagehide={replayPage.handlePageHide} />
 
 <main
-  class="relative flex h-[calc(100dvh-3rem)] flex-col overflow-hidden"
-  style="background: #1a1610; --forest-gold: #c4a46a; --forest-green: #5a8a5c; --forest-amber: #c4783a; --forest-bark: #2a2318; --forest-moss: #8b7e6a; --forest-canopy: #1a1610; --forest-mist: rgba(139, 126, 106, 0.15); --forest-cream: #e8dcc8;"
+  class="replay-page relative flex h-[calc(100dvh-3rem)] flex-col overflow-hidden"
 >
-  <div
-    class="pointer-events-none absolute inset-0 opacity-[0.03]"
-    style="background-image: url('data:image/svg+xml,<svg viewBox=&quot;0 0 256 256&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><filter id=&quot;n&quot;><feTurbulence type=&quot;fractalNoise&quot; baseFrequency=&quot;0.9&quot; numOctaves=&quot;4&quot; stitchTiles=&quot;stitch&quot;/></filter><rect width=&quot;100%25&quot; height=&quot;100%25&quot; filter=&quot;url(%23n)&quot;/></svg>'); background-repeat: repeat; background-size: 256px 256px;"
-  ></div>
+  <div class="replay-page-noise pointer-events-none absolute inset-0 opacity-[0.03]"></div>
 
   <ReplayHeader
     symbol={data.symbol}
@@ -94,3 +90,23 @@
 
   <div class="h-px w-full shrink-0 bg-gradient-to-r from-transparent via-primary/70 to-transparent"></div>
 </main>
+
+<style>
+  .replay-page {
+    background: #1a1610;
+    --forest-gold: #c4a46a;
+    --forest-green: #5a8a5c;
+    --forest-amber: #c4783a;
+    --forest-bark: #2a2318;
+    --forest-moss: #8b7e6a;
+    --forest-canopy: #1a1610;
+    --forest-mist: rgb(139 126 106 / 0.15);
+    --forest-cream: #e8dcc8;
+  }
+
+  .replay-page-noise {
+    background-image: url("data:image/svg+xml,<svg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+  }
+</style>

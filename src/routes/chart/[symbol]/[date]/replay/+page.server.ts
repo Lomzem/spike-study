@@ -10,6 +10,15 @@ function buildReplayDateHref(symbol: string, date: string) {
   return `/chart/${encodeURIComponent(symbol)}/${encodeURIComponent(date)}/replay`
 }
 
+function logReplayLoadError(context: string, error: unknown) {
+  if (error instanceof Error) {
+    console.error(`[replay] ${context}`, error, error.stack)
+    return
+  }
+
+  console.error(`[replay] ${context}`, error)
+}
+
 export const load: PageServerLoad = async ({ params, url }) => {
   const symbol = params.symbol.trim().toUpperCase()
   const routeDate = params.date
@@ -26,15 +35,14 @@ export const load: PageServerLoad = async ({ params, url }) => {
   try {
     db = getDb()
   } catch (error) {
+    logReplayLoadError('failed to initialize database client', error)
+
     return {
       symbol,
       date: routeDate,
       availableDates: [],
       candles: [],
-      dbError:
-        error instanceof Error
-          ? error.message
-          : 'Database configuration is missing.',
+      dbError: 'A database error occurred.',
     } satisfies ReplayPageData
   }
 
@@ -65,13 +73,14 @@ export const load: PageServerLoad = async ({ params, url }) => {
       dbError: undefined,
     } satisfies ReplayPageData
   } catch (error) {
+    logReplayLoadError('failed to load replay data', error)
+
     return {
       symbol,
       date: routeDate,
       availableDates: [],
       candles: [],
-      dbError:
-        error instanceof Error ? error.message : 'Database query failed.',
+      dbError: 'A database error occurred.',
     } satisfies ReplayPageData
   }
 }

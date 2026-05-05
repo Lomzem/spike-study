@@ -6,6 +6,93 @@ import type {
 } from './replay-types'
 import { buildReplayStorageKey } from './replay-persistence'
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isReplayOrderAction(
+  value: unknown,
+): value is ReplaySnapshot['pendingOrders'][number]['action'] {
+  return value === 'buy' || value === 'sell-short' || value === 'close'
+}
+
+function isReplayPositionSide(
+  value: unknown,
+): value is NonNullable<ReplaySnapshot['position']>['side'] {
+  return value === 'long' || value === 'short'
+}
+
+function isReplayPosition(
+  value: unknown,
+): value is NonNullable<ReplaySnapshot['position']> {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const position = value as NonNullable<ReplaySnapshot['position']>
+  return (
+    isReplayPositionSide(position.side) &&
+    isFiniteNumber(position.shares) &&
+    isFiniteNumber(position.averagePrice) &&
+    isFiniteNumber(position.openedAt)
+  )
+}
+
+function isReplayPendingOrder(
+  value: unknown,
+): value is ReplaySnapshot['pendingOrders'][number] {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const order = value as ReplaySnapshot['pendingOrders'][number]
+  return (
+    typeof order.id === 'string' &&
+    isReplayOrderAction(order.action) &&
+    isFiniteNumber(order.shares) &&
+    isFiniteNumber(order.submittedAt)
+  )
+}
+
+function isReplayFill(
+  value: unknown,
+): value is ReplaySnapshot['fills'][number] {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const fill = value as ReplaySnapshot['fills'][number]
+  return (
+    typeof fill.id === 'string' &&
+    typeof fill.orderId === 'string' &&
+    isReplayOrderAction(fill.action) &&
+    isFiniteNumber(fill.shares) &&
+    isFiniteNumber(fill.price) &&
+    isFiniteNumber(fill.time) &&
+    isFiniteNumber(fill.realizedPnl)
+  )
+}
+
+function isReplayClosedTrade(
+  value: unknown,
+): value is ReplaySnapshot['closedTrades'][number] {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const trade = value as ReplaySnapshot['closedTrades'][number]
+  return (
+    typeof trade.id === 'string' &&
+    isReplayPositionSide(trade.side) &&
+    isFiniteNumber(trade.shares) &&
+    isFiniteNumber(trade.entryPrice) &&
+    isFiniteNumber(trade.exitPrice) &&
+    isFiniteNumber(trade.openedAt) &&
+    isFiniteNumber(trade.closedAt) &&
+    isFiniteNumber(trade.realizedPnl)
+  )
+}
+
 function isReplaySnapshot(value: unknown): value is ReplaySnapshot {
   if (!value || typeof value !== 'object') {
     return false
@@ -16,15 +103,19 @@ function isReplaySnapshot(value: unknown): value is ReplaySnapshot {
     snapshot.version === 1 &&
     typeof snapshot.symbol === 'string' &&
     typeof snapshot.date === 'string' &&
-    typeof snapshot.currentTime === 'number' &&
-    typeof snapshot.revealedCandleIndex === 'number' &&
-    typeof snapshot.speed === 'number' &&
+    isFiniteNumber(snapshot.currentTime) &&
+    isFiniteNumber(snapshot.revealedCandleIndex) &&
+    isFiniteNumber(snapshot.speed) &&
     typeof snapshot.isPlaying === 'boolean' &&
-    typeof snapshot.cash === 'number' &&
+    isFiniteNumber(snapshot.cash) &&
+    (snapshot.position === null || isReplayPosition(snapshot.position)) &&
     Array.isArray(snapshot.pendingOrders) &&
+    snapshot.pendingOrders.every((order) => isReplayPendingOrder(order)) &&
     Array.isArray(snapshot.fills) &&
+    snapshot.fills.every((fill) => isReplayFill(fill)) &&
     Array.isArray(snapshot.closedTrades) &&
-    typeof snapshot.updatedAt === 'number'
+    snapshot.closedTrades.every((trade) => isReplayClosedTrade(trade)) &&
+    isFiniteNumber(snapshot.updatedAt)
   )
 }
 

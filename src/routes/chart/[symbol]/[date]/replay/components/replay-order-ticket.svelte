@@ -31,12 +31,30 @@
   let shareSize = $state('100')
   const hasPendingOrder = $derived(pendingOrder !== null)
 
+  function getShareSize() {
+    const shares = Number(shareSize)
+
+    if (!Number.isFinite(shares) || shares <= 0) {
+      return null
+    }
+
+    return shares
+  }
+
   function submitBuy() {
-    onBuy?.(Number(shareSize))
+    const shares = getShareSize()
+
+    if (shares !== null) {
+      onBuy?.(shares)
+    }
   }
 
   function submitSellShort() {
-    onSellShort?.(Number(shareSize))
+    const shares = getShareSize()
+
+    if (shares !== null) {
+      onSellShort?.(shares)
+    }
   }
 </script>
 
