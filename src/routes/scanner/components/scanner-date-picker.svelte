@@ -19,14 +19,14 @@
   } = $props()
 
   let selectedDate = $state<DateValue | undefined>()
+  let lastSyncedValue = $state<string | undefined>(undefined)
   const placeholderDate = $derived(selectedDate ?? today(getLocalTimeZone()))
 
   $effect(() => {
-    const nextValue = value ? parseDate(value) : undefined
+    if (value === lastSyncedValue) return
 
-    if (nextValue?.toString() !== selectedDate?.toString()) {
-      selectedDate = nextValue
-    }
+    lastSyncedValue = value
+    selectedDate = value ? parseDate(value) : undefined
   })
 
   function handleValueChange(nextValue: DateValue | undefined) {
