@@ -88,6 +88,10 @@
   })
 
   $effect(() => {
+    indicators.showSma
+    indicators.showEma
+    indicators.showVwap
+
     if (controller) {
       controller.indicators = indicators
     }

@@ -15,6 +15,7 @@ const SMA_COLOR = '#f59e0b'
 const EMA_COLOR = '#60a5fa'
 const VWAP_COLOR = '#c084fc'
 const VWAP_LINE_STYLE: 0 | 1 | 2 | 3 | 4 = 2
+const MAIN_PRICE_PANE_INDEX = 0
 
 interface IndicatorSeriesState {
   smaSeries: ISeriesApi<'Line'> | null
@@ -108,12 +109,16 @@ export class ChartIndicatorSeries {
     lineWidth: 1 | 2 | 3 | 4,
     lineStyle: 0 | 1 | 2 | 3 | 4 | undefined,
   ) {
-    return this.chart.addSeries(LineSeries, {
-      color,
-      lineWidth,
-      lineStyle,
-      lastValueVisible: false,
-      priceLineVisible: false,
-    })
+    return this.chart.addSeries(
+      LineSeries,
+      {
+        color,
+        lineWidth,
+        lineStyle,
+        lastValueVisible: false,
+        priceLineVisible: false,
+      },
+      MAIN_PRICE_PANE_INDEX,
+    )
   }
 }
