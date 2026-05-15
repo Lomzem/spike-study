@@ -1,11 +1,16 @@
 # Spike Study
 
-Spike Study is a SvelteKit app for reviewing historical intraday stock action.
+Spike Study is a SvelteKit app for studying historical stock price action.
+
+All routes are auth-projected.
+
+It includes an scanner, interactive 1-minute charts, replay mode, technical indicators, and
+persisted chart drawings.
 
 ## Features
 
-- Interactive minute charts powered by Lightweight Charts
-- Intraday replay mode with simulated trading
+- Interactive 1-minute charts powered by [Lightweight Charts](https://www.tradingview.com/lightweight-charts/)
+- 1-minute replay mode with simulated trading
 - SMA, EMA, and VWAP overlays
 - Drawing tools with persisted user state
 - Auth-protected chart and scanner workflows
@@ -17,33 +22,43 @@ Spike Study is a SvelteKit app for reviewing historical intraday stock action.
 - Tailwind CSS + shadcn-svelte
 - Clerk for auth
 - Convex for user drawing data
-- Drizzle + libsql/Turso for market data
-- Bun for package management and scripts
+- Drizzle + SQLite/libSQL for market data
+- Massive for market data ingestion
 
-## Setup
+## Local Setup
 
-```bash
-bun install
-cp .env.example .env.local
+The app depends on several third-party services and a pre-populated market data
+database. To run locally, you will need these two files:
+
+- `.env`
+- `local.db`
+
+After cloning the repository, place both files in the project root:
+
+```text
+spike-study/
+  .env
+  local.db
+  package.json
 ```
 
-Fill in the required env vars for Clerk, Convex, market data, and libsql/Turso.
-
-## Run
+Then install dependencies:
 
 ```bash
-bun run dev
+npm install
 ```
 
-## Useful Commands
+## Run Locally
 
-| Command         | Description                           |
-| --------------- | ------------------------------------- |
-| `bun run dev`   | Start the app and Convex dev workflow |
-| `bun run build` | Build the app and run checks          |
-| `bun run check` | Run `svelte-check`                    |
-| `bun run test`  | Run Vitest                            |
-| `bun run lint`  | Run ESLint and checks                 |
+Start the SvelteKit app:
+
+```bash
+npm run dev
+```
+
+Open the local URL printed by Vite, usually `http://localhost:5173`.
+
+The app is auth-protected, so sign in with a Google account.
 
 ## Structure
 
